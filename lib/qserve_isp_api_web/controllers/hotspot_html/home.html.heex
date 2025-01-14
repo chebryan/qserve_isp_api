@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hotspot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .user-details, .packages {
+      margin: 20px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .package {
+      margin: 10px 0;
+    }
+    @media (max-width: 768px) {
+    .grid-item {
+      flex: 0 0 calc(50% - 16px); /* Two columns on smaller screens */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .grid-item {
+      flex: 0 0 100%; /* Single column on very small screens */
+    }
+  }
+  </style>
+</head>
+<body>
+  <h1>Welcome to Hotspot!</h1>
+
+  <div class="user-details">
+    <h2>User Details</h2>
+    <p><strong>Username:</strong> <%= @user.username %></p>
+    <p><strong>Email:</strong> <%= @user.email %></p>
+    <%!-- <p><strong>Support Number:</strong> <%= @user.support_number %></p> --%>
+    <%!-- <p><strong>Paybill:</strong> <%= @user.paybill %></p> --%>
+  </div>
+
+
+
+<div>
+  <h2>Available Packages</h2>
+  <%= if Enum.empty?(@packages) do %>
+    <p>No packages available for this NAS.</p>
+  <% else %>
+    <!-- Grid Container -->
+    <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+      <%= for package <- @packages do %>
+        <!-- Card Item -->
+        <div style="
+          flex: 0 0 calc(33.333% - 16px); 
+          border: 1px solid #ccc; 
+          border-radius: 8px; 
+          padding: 16px; 
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+          <h3 style="margin-top: 0;"><%= package.name %></h3>
+          <p><strong>Description:</strong> <%= package.description %></p>
+          <p><strong>Duration:</strong> <%= package.duration %> seconds</p>
+          <p><strong>Price:</strong> $<%= package.price %></p>
+
+          <!-- Buy Button -->
+          <button 
+            style="margin-top: 12px; padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;"
+            phx-click="show_phone_input"
+            phx-value-package-id={package.id}
+            phx-value-price={ package.price }
+            phx-value-user-id={ @user.id }>
+            Buy
+          </button>
+
+          <!-- Dynamic Phone Input -->
+          <%= if @active_package_id == package.id do %>
+            <form 
+              style="margin-top: 12px;" 
+              phx-submit="process_payment" 
+              phx-change="validate_phone">
+              <input 
+                type="tel" 
+                name="phone_number" 
+                placeholder="Enter phone number" 
+                style="padding: 8px; width: calc(100% - 16px); border: 1px solid #ccc; border-radius: 4px;">
+              <input type="hidden" name="package_id" value={package.id}>
+              <input type="hidden" name="price" value={package.price}>
+              <input type="hidden" name="user_id" value={@user.id}>
+              <button 
+                type="submit" 
+                style="margin-top: 8px; padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Submit
+              </button>
+            </form>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+
+</body>
+</html>

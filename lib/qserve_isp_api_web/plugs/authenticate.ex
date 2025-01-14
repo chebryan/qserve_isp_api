@@ -41,4 +41,20 @@ defmodule QserveIspApiWeb.Plugs.Authenticate do
     |> json(%{error: "Unauthorized"})
     |> halt()
   end
+
+  def extract_user_id(conn) do
+    case Plug.Conn.get_req_header(conn, "authorization") do
+      ["Bearer " <> token] ->
+        case JWT.verify_token(token) do
+          {:ok, claims} -> {:ok, claims["user_id"]}
+          {:error, _reason} -> {:error, "Invalid or expired token"}
+        end
+
+      _ ->
+        {:error, "Authorization token not provided"}
+    end
+  end
+
+
+
 end

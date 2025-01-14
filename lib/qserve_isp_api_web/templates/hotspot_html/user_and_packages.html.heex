@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hotspot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .user-details, .packages {
+      margin: 20px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .package {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to Hotspot!</h1>
+
+  <div class="user-details">
+    <h2>User Details</h2>
+    <p><strong>Username:</strong> <%= @user.username %></p>
+    <p><strong>Email:</strong> <%= @user.email %></p>
+    <p><strong>Support Number:</strong> <%= @user.support_number %></p>
+    <p><strong>Paybill:</strong> <%= @user.paybill %></p>
+  </div>
+
+  <div class="packages">
+    <h2>Available Packages</h2>
+    <%= if Enum.empty?(@packages) do %>
+      <p>No packages available for NAS: <%= @nas_ip %>.</p>
+    <% else %>
+      <%= for package <- @packages do %>
+        <div class="package">
+          <h3><%= package.name %></h3>
+          <p><strong>Description:</strong> <%= package.description %></p>
+          <p><strong>Duration:</strong> <%= package.duration %> seconds</p>
+          <p><strong>Price:</strong> <%= package.price %></p>
+          <button>Buy Now</button>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</body>
+</html>

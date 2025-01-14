@@ -16,6 +16,7 @@ defmodule QserveIspApi.Nas do
     field :community, :string
     field :description, :string
 
+    many_to_many :packages, QserveIspApi.Packages.Package, join_through: "packages_nas"
     belongs_to :user, QserveIspApi.User
 
     timestamps()
@@ -33,7 +34,7 @@ defmodule QserveIspApi.Nas do
       :server,
       :community,
       :description,
-      :user_id
+      :user_id,
     ])
     |> validate_required([:nasname, :user_id])
     |> assoc_constraint(:user)

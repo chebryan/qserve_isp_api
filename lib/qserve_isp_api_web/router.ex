@@ -16,8 +16,12 @@ defmodule QserveIspApiWeb.Router do
 
   scope "/", QserveIspApiWeb do
     pipe_through :browser
-
-    get "/", PageController, :home
+    live "/hs", HotspotLive
+    # scope "/hs"do
+    #   # get "/:username/:nas_ipaddress", HotspotController, :home
+    #   live "/hotspot", HotspotLive
+    # end
+    # get "/", PageController, :home
   end
 
   # Other scopes may use custom stacks.
@@ -28,8 +32,17 @@ defmodule QserveIspApiWeb.Router do
     scope "/nas" do
       get "/certificates/:ip", NasController, :certificates
       get "/openvpnfiles/:ip", NasController, :openvpn_files
-
     end
+
+    scope "/packages" do
+      resources "/", PackageController, only: [:index, :show, :create, :update]
+      post "/:package_id/associate_nas", PackageController, :associate_package_to_nas
+    end
+
+    # post "/packages/:package_id/associate_nas", PackageController, :associate_package_to_nas
+    resources "/payments", PaymentController, only: [:index, :show, :create, :update]
+    post "/payments/callback", PaymentController, :callback
+
 
   end
 
@@ -41,6 +54,7 @@ defmodule QserveIspApiWeb.Router do
     scope "/nas" do
      post "/radcheck", NasController, :insert_radcheck
     end
+
 
   end
 
