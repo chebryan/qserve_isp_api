@@ -31,6 +31,7 @@ defmodule QserveIspApiWeb.HotspotController do
           user -> user
         end
 
+        #uus
       # Fetch NAS and packages using nas_ipaddress
       packages =
         Repo.get_by(Nas, server: nas_ip)
