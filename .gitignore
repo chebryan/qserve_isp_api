@@ -32,6 +32,9 @@ qserve_isp_api-*.tar
 /priv/static/cache_manifest.json
 /config/
 #sawa
+/config/prod.exs
+/config/runtime.exs
+
 
 # In case you use Node.js/npm, you want to ignore these.
 npm-debug.log
