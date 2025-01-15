@@ -5,6 +5,8 @@ defmodule QserveIspApiWeb.MpesaController do
   alias QserveIspApi.Payments.Payment
   alias QserveIspApi.MpesaTransactions.MpesaTransaction
   alias QserveIspApi.Mpesa
+  alias QserveIspApi.Packages.Package
+
 
   @doc """
   Handle M-Pesa payment callback.
