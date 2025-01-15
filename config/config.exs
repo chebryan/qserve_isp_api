@@ -36,6 +36,14 @@ config :qserve_isp_api, QserveIspApiWeb.Endpoint,
 # at the `config/runtime.exs`.
 config :qserve_isp_api, QserveIspApi.Mailer, adapter: Swoosh.Adapters.Local
 
+config :qserve_isp_api, QserveIspApi.PubSub,
+  adapter: Phoenix.PubSub.PG2
+
+config :qserve_isp_api, :mpesa,
+  stk_push_url: "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+  token_url: "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
+  callback_url: "https://api.qserve-isp.net/api/pay/callback"
+
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.17.11",
@@ -45,6 +53,9 @@ config :esbuild,
     cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
+
+
+
 
 # Configure tailwind (the version is required)
 config :tailwind,

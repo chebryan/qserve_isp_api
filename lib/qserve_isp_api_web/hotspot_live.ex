@@ -15,7 +15,9 @@ defmodule QserveIspApiWeb.HotspotLive do
        user: nil,
        active_package_id: nil,
        phone_number: nil,
-       mac: nil
+       mac: nil,
+       show_start_browsing: false,
+       payment_status: nil
      )}
   end
 
@@ -42,22 +44,7 @@ defmodule QserveIspApiWeb.HotspotLive do
 
   end
 
-  # @impl true
-  # def handle_params(%{"username" => username, "nas_ipaddress" => nas_ip}, _uri, socket) do
-  #   # Fetch the user
-  #   user =
-  #     Repo.get_by(User, username: username)
-  #     |> case do
-  #       nil -> nil
-  #       user -> user
-  #     end
 
-  #   # Fetch packages for the NAS IP
-  #   packages =
-  #     Packages.list_packages_for_nas_ip(nas_ip)
-
-  #   {:noreply, assign(socket, user: user, packages: packages)}
-  # end
 
   @impl true
   def handle_event("show_phone_input", %{"package-id" => package_id}, socket) do
@@ -94,12 +81,6 @@ defmodule QserveIspApiWeb.HotspotLive do
                phone,
                account_reference,
                transaction_description
-              # 1, # user_id
-              # payment.id, # payment_id
-              # 100.0, # amount
-              # "254700000000", # phone_number
-              # "unique_mac_address", # account_reference
-              # "Payment for internet" # transaction_description
              ) do
           {:ok, response} ->
             {:noreply, assign(socket, :payment_status, "STK push sent successfully!")}
@@ -115,35 +96,37 @@ defmodule QserveIspApiWeb.HotspotLive do
     end
   end
 
-  # @impl true
-  # def handle_event("process_payment", %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac}, socket) do
-  #   user = socket.assigns.user
 
-  #   # Prepare payment data
-  #   amount = Decimal.new(price)
-  #   transaction_description = "Payment for package #{package_id}"
-  #   account_reference = mac
+  @impl true
+  def handle_info({:payment_status_update, status}, socket) do
+    case status do
+      :success ->
+        # Allow user to browse
+        socket =
+          socket
+          |> assign(:payment_status, "Payment successful! Start browsing.")
+          |> assign(:show_start_browsing, true)
 
-  #   case QserveIspApi.MpesaApi.initiate_payment(user.id, package_id, amount, phone, account_reference, transaction_description) do
-  #     {:ok, payment} ->
-  #       {:noreply, assign(socket, active_package_id: nil, phone_number: nil)}
+        {:noreply, socket}
 
-  #     {:error, reason} ->
-  #       IO.inspect(reason, label: "Payment initiation failed")
-  #       {:noreply, socket}
-  #   end
-  # end
-
-
-
-  defp get_mac_from_url(url) do
-    # Extract MAC address using a regular expression
-    case Regex.run(~r/\$\(mac\)/, url) do
-      nil -> nil
-      [mac] -> String.trim(mac)
+      :failed ->
+        # Handle payment failure
+        {:noreply, assign(socket, :payment_status, "Payment failed. Please try again.")}
     end
   end
 
+
+  # @impl true
+  # def handle_info({:payment_status_update, status}, socket) do
+  #   case status do
+  #     :success ->
+  #       # Allow user to browse
+  #       {:noreply, assign(socket, :payment_status, "Payment successful! Start browsing.", show_start_browsing: true)}
+
+  #     :failed ->
+  #       {:noreply, assign(socket, :payment_status, "Payment failed. Please try again.")}
+  #   end
+  # end
 
   @impl true
   def render(assigns) do
@@ -156,46 +139,58 @@ defmodule QserveIspApiWeb.HotspotLive do
         <p>No packages available for this NAS.</p>
       <% else %>
         <div style="display: flex; flex-wrap: wrap; gap: 16px;">
-          <%= for package <- @packages do %>
-            <div style="
-              flex: 0 0 calc(33.333% - 16px);
-              border: 1px solid #ccc;
-              border-radius: 8px;
-              padding: 16px;
-              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-              <h4><%= package.name %></h4>
-              <p><strong>Description:</strong> <%= package.description %></p>
-              <p><strong>Duration:</strong> <%= package.duration %> seconds</p>
-              <p><strong>Price:</strong> Ksh<%= package.price %></p>
+        <div>
+            <%= if @show_start_browsing do %>
+              <!-- Display payment status and Start Browsing button -->
+              <div>
+                <%= if @payment_status do %>
+                  <p><%= @payment_status %></p>
+                     <% end %>
+                    <a href="http://example.com/login/success" class="btn btn-primary">Start Browsing</a>
+                  </div>
+                <% else %>
+                    <%= for package <- @packages do %>
+                      <div style="
+                        flex: 0 0 calc(33.333% - 16px);
+                        border: 1px solid #ccc;
+                        border-radius: 8px;
+                        padding: 16px;
+                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                        <h4><%= package.name %></h4>
+                        <p><strong>Description:</strong> <%= package.description %></p>
+                        <p><strong>Duration:</strong> <%= package.duration %> seconds</p>
+                        <p><strong>Price:</strong> Ksh<%= package.price %></p>
 
-              <button
-                style="margin-top: 12px; padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;"
-                phx-click="show_phone_input"
-                phx-value-package-id={ package.id }>
-                Buy
-              </button>
+                        <button
+                          style="margin-top: 12px; padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;"
+                          phx-click="show_phone_input"
+                          phx-value-package-id={ package.id }>
+                          Buy
+                        </button>
 
-              <%= if @active_package_id == package.id do %>
-                <form style="margin-top: 12px;" phx-submit="process_payment">
-                  <input
-                    type="tel"
-                    name="phone_number"
-                    placeholder="Enter phone number"
-                    required
-                    style="width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                  <input type="hidden" name="package_id" value={ package.id }>
-                  <input type="hidden" name="price" value={ package.price }>
-                  <input type="hidden" name="mac" value={@mac }>
+                          <%= if @active_package_id == package.id do %>
+                            <form style="margin-top: 12px;" phx-submit="process_payment">
+                              <input
+                                type="tel"
+                                name="phone_number"
+                                placeholder="Enter phone number"
+                                required
+                                style="width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                              <input type="hidden" name="package_id" value={ package.id }>
+                              <input type="hidden" name="price" value={ package.price }>
+                              <input type="hidden" name="mac" value={@mac }>
 
-                  <button
-                    type="submit"
-                    style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px;">
-                    Submit
-                  </button>
-                </form>
-              <% end %>
-            </div>
+                              <button
+                                type="submit"
+                                style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px;">
+                                Submit
+                              </button>
+                            </form>
+                        <% end %>
+                      </div>
+                    <% end %>
           <% end %>
+          </div>
         </div>
       <% end %>
     </div>

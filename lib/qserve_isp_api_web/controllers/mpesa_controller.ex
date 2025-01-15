@@ -43,6 +43,12 @@ defmodule QserveIspApiWeb.MpesaController do
           # Payment failed
           payment = Repo.get!(Payment, payment_id)
           Repo.update!(Ecto.Changeset.change(payment, %{status: "failed"}))
+
+          Phoenix.PubSub.broadcast(
+            QserveIspApi.PubSub,
+            "payment_status:#{payment_id}",
+            {:payment_status_update, if(result_code == 0, do: :success, else: :failed)}
+          )
       end
     end)
 
@@ -79,4 +85,7 @@ defmodule QserveIspApiWeb.MpesaController do
         |> json(%{error: reason})
     end
   end
+
+
+
 end
