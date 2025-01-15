@@ -24,7 +24,7 @@ defmodule QserveIspApi.MpesaApi do
     end
   end
 
-  def normalize_phone_number(phone_number) when is_binary(phone_number) do
+  def normalize_phone_number(phone_number) do
     cond do
       String.starts_with?(phone_number, "0") ->
         "254" <> String.slice(phone_number, 1..-1)
