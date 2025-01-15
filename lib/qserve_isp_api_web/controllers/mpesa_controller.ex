@@ -4,6 +4,7 @@ defmodule QserveIspApiWeb.MpesaController do
   alias QserveIspApi.Repo
   alias QserveIspApi.Payments.Payment
   alias QserveIspApi.MpesaTransactions.MpesaTransaction
+  alias QserveIspApi.Mpesa
 
   @doc """
   Handle M-Pesa payment callback.
@@ -58,5 +59,24 @@ defmodule QserveIspApiWeb.MpesaController do
     Enum.find_value(callback["CallbackMetadata"]["Item"], fn %{"Name" => name, "Value" => value} ->
       if name == "MpesaReceiptNumber", do: value, else: nil
     end)
+  end
+
+  def add_credentials(conn, %{"credentials" => credentials_params}) do
+    case Mpesa.add_or_update_credentials(credentials_params) do
+      {:ok, _credential} ->
+        conn
+        |> put_status(:ok)
+        |> json(%{message: "M-Pesa credentials saved successfully"})
+
+      {:error, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: changeset.errors})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: reason})
+    end
   end
 end

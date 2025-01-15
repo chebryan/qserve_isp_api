@@ -17,5 +17,6 @@ defmodule QserveIspApi.Mpesa.Credential do
     credential
     |> cast(attrs, [:user_id, :consumer_key, :consumer_secret, :short_code, :passkey])
     |> validate_required([:user_id, :consumer_key, :consumer_secret, :short_code, :passkey])
+    |> unique_constraint(:user_id)
   end
 end
