@@ -5,6 +5,7 @@ defmodule QserveIspApiWeb.HotspotLive do
   alias QserveIspApi.User
   alias QserveIspApi.Payments.Payment
   alias QserveIspApi.MpesaApi
+  alias QserveIspApi.MpesaTransactions.MpesaTransaction
 
   @impl true
   def mount(_params, _session, socket) do
@@ -51,58 +52,125 @@ defmodule QserveIspApiWeb.HotspotLive do
     {:noreply, assign(socket, active_package_id: String.to_integer(package_id))}
   end
 
-  @impl true
-  def handle_event("process_payment", %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac}, socket) do
-    user = socket.assigns.user
-    # amount = Decimal.new(price)
-    # amount = Decimal.to_integer(price)
 
-    amount =
+
+  @impl true
+  def handle_event(
+      "process_payment",
+      %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac},
+      socket
+    ) do
+  user = socket.assigns.user
+  # amount = Decimal.new(price)
+   amount =
       case Decimal.new(price) do
         %Decimal{} = decimal -> Decimal.to_integer(decimal)
         _ -> 0 # Handle invalid price inputs gracefully
       end
-
-    account_reference = mac
-    transaction_description = "Payment for package #{package_id}"
-
-    # Save the payment record
-    payment_changeset =
-      Payment.changeset(%Payment{}, %{
+  transaction_description = "Payment for package #{package_id}"
+  Repo.transaction(fn ->
+    # Step 1: Save payment in the payments table
+    {:ok, payment} =
+      %Payment{}
+      |> Payment.changeset(%{
         user_id: user.id,
-        package_id: package_id,
-        username: mac,
+        package_id: String.to_integer(package_id),
         amount: amount,
         phone_number: phone,
         status: "pending",
-        account_reference: account_reference,
+        username: mac,
+        account_reference: mac,
         transaction_description: transaction_description
+
       })
+      |> Repo.insert()
 
-    case Repo.insert(payment_changeset) do
-      {:ok, payment} ->
-        # Call the M-Pesa STK push
-        case MpesaApi.send_stk_push(
-               user.id,
-               payment.id,
-               amount,
-               phone,
-               account_reference,
-               transaction_description
-             ) do
-          {:ok, response} ->
-            {:noreply, assign(socket, :payment_status, "STK push sent successfully!")}
+    # Step 2: Send STK push
 
-          {:error, reason} ->
-            IO.inspect(reason, label: "STK push error")
-            {:noreply, assign(socket, :payment_status, "Failed to send STK push.")}
-        end
 
-      {:error, changeset} ->
-        {:noreply,
-         assign(socket, :payment_status, "Failed to save payment record. Check your input.")}
-    end
-  end
+    stk_response =
+      case MpesaApi.send_stk_push(
+             user.id,
+             payment.id,
+             amount,
+             phone,
+             mac,
+             transaction_description
+           ) do
+        {:ok, response} ->
+          response
+
+        {:error, reason} ->
+          raise "Failed to send STK push: #{reason}"
+      end
+
+    # Step 3: Save STK push response in mpesa_transactions table
+    Repo.insert!(%MpesaTransaction{
+          payment_id: payment.id,
+          checkout_request_id: stk_response["CheckoutRequestID"],
+          merchant_request_id: stk_response["MerchantRequestID"],
+          status: "initiated",
+          raw_response: stk_response
+        })
+      end)
+
+  {:noreply,
+   assign(socket, :payment_status, "STK push sent successfully! Please wait for confirmation.")}
+end
+
+
+  # @impl true
+  # def handle_event("process_payment", %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac}, socket) do
+  #   user = socket.assigns.user
+  #   # amount = Decimal.new(price)
+  #   # amount = Decimal.to_integer(price)
+
+  #   amount =
+  #     case Decimal.new(price) do
+  #       %Decimal{} = decimal -> Decimal.to_integer(decimal)
+  #       _ -> 0 # Handle invalid price inputs gracefully
+  #     end
+
+  #   account_reference = mac
+  #   transaction_description = "Payment for package #{package_id}"
+
+  #   # Save the payment record
+  #   payment_changeset =
+  #     Payment.changeset(%Payment{}, %{
+  #       user_id: user.id,
+  #       package_id: package_id,
+  #       username: mac,
+  #       amount: amount,
+  #       phone_number: phone,
+  #       status: "pending",
+  #       account_reference: account_reference,
+  #       transaction_description: transaction_description
+  #     })
+
+  #   case Repo.insert(payment_changeset) do
+  #     {:ok, payment} ->
+  #       # Call the M-Pesa STK push
+  #       case MpesaApi.send_stk_push(
+  #              user.id,
+  #              payment.id,
+  #              amount,
+  #              phone,
+  #              account_reference,
+  #              transaction_description
+  #            ) do
+  #         {:ok, response} ->
+  #           {:noreply, assign(socket, :payment_status, "STK push sent successfully!")}
+
+  #         {:error, reason} ->
+  #           IO.inspect(reason, label: "STK push error")
+  #           {:noreply, assign(socket, :payment_status, "Failed to send STK push.")}
+  #       end
+
+  #     {:error, changeset} ->
+  #       {:noreply,
+  #        assign(socket, :payment_status, "Failed to save payment record. Check your input.")}
+  #   end
+  # end
 
 
   @impl true
