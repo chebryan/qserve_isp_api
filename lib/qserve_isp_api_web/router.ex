@@ -42,6 +42,7 @@ defmodule QserveIspApiWeb.Router do
     end
     scope "/mpesa" do
       post "/credentials", MpesaController, :add_credentials
+      put "/credentials", MpesaController, :add_credentials
     end
 
 
