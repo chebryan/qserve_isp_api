@@ -16,7 +16,7 @@ defmodule QserveIspApiWeb.Router do
 
   scope "/", QserveIspApiWeb do
     pipe_through :browser
-    live "/hs/:username/:nas_ipaddress", HotspotLive, :home
+    live "/hs/:username/:nas_ipaddress/:mac", HotspotLive, :home
     # get "/hs/:username/:nas_ipaddress", HotspotController, :home
 
     # scope "/hs"do

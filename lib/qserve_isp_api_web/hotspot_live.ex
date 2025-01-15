@@ -18,15 +18,7 @@ defmodule QserveIspApiWeb.HotspotLive do
        mac: nil
      )}
   end
-  # def mount(_params, _session, socket) do
-  #   {:ok,
-  #    socket
-  #    |> assign(:packages, [])
-  #    |> assign(:user, nil)
-  #    |> assign(:active_package_id, nil)
-  #    |> assign(:phone_number, nil)}
-  #    |> assign(:mac, nil)
-  # end
+
 
   @impl true
   def handle_params(params, _uri, socket) do
@@ -34,7 +26,10 @@ defmodule QserveIspApiWeb.HotspotLive do
     username = params["username"]
     nas_ip = params["nas_ipaddress"]
     # mac = get_mac_from_url(params["nas_ipaddress"])
-    mac = "testuser1" #params["mac"]
+    mac = params["mac"]
+    chap_id = params["chapID"]
+    chap_challenge = params["chapChallenge"]
+    login_link = params["loginLink"]
     # Fetch user
     user = Repo.get_by(User, username: username)
 
