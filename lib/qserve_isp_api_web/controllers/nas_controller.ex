@@ -133,10 +133,19 @@ defmodule QserveIspApiWeb.NasController do
   @doc """
   Auto-generate a secret for the NAS.
   """
+  # defp generate_secret do
+  #   :crypto.strong_rand_bytes(@secret_length)
+  #   |> Base.encode64()
+  #   |> binary_part(0, @secret_length)
+  # end
+
   defp generate_secret do
-    :crypto.strong_rand_bytes(@secret_length)
-    |> Base.encode64()
-    |> binary_part(0, @secret_length)
+    allowed_characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    length = 10
+
+    for _ <- 1..length, into: "" do
+      String.at(allowed_characters, :rand.uniform(String.length(allowed_characters)) - 1)
+    end
   end
 
   @doc """

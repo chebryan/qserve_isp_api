@@ -3,6 +3,8 @@ defmodule QserveIspApiWeb.HotspotLive do
   alias QserveIspApi.Packages
   alias QserveIspApi.Repo
   alias QserveIspApi.User
+  alias QserveIspApi.Payments.Payment
+  alias QserveIspApi.MpesaApi
 
   @impl true
   def mount(_params, _session, socket) do
@@ -70,39 +72,73 @@ defmodule QserveIspApiWeb.HotspotLive do
   @impl true
   def handle_event("process_payment", %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac}, socket) do
     user = socket.assigns.user
+    amount = Decimal.new(price)
+    account_reference = mac
+    transaction_description = "Payment for package #{package_id}"
 
-    # Save payment data (implement your logic here)
+    # Save the payment record
+    payment_changeset =
+      Payment.changeset(%Payment{}, %{
+        user_id: user.id,
+        package_id: package_id,
+        username: mac,
+        amount: amount,
+        phone_number: phone,
+        status: "pending",
+        account_reference: account_reference,
+        transaction_description: transaction_description
+      })
 
-    payment_data = %{
-      username: mac,
-      package_id: String.to_integer(package_id),
-      user_id: user.id,
-      amount_paid: Decimal.new(price),
-      payment_status: "pending",
-      # phone_number: phone
-    }
-    # send stk with phone
+    case Repo.insert(payment_changeset) do
+      {:ok, payment} ->
+        # Call the M-Pesa STK push
+        case MpesaApi.send_stk_push(
+               user.id,
+               payment.id,
+               amount,
+               phone,
+               account_reference,
+               transaction_description
+              # 1, # user_id
+              # payment.id, # payment_id
+              # 100.0, # amount
+              # "254700000000", # phone_number
+              # "unique_mac_address", # account_reference
+              # "Payment for internet" # transaction_description
+             ) do
+          {:ok, response} ->
+            {:noreply, assign(socket, :payment_status, "STK push sent successfully!")}
 
-    # Placeholder for M-Pesa integration
-    IO.inspect(payment_data, label: "Payment Data")
-    case QserveIspApi.Payments.create_payment(payment_data) do
-      {:ok, _payment} ->
-        IO.puts("Payment saved successfully!")
-        {:noreply, assign(socket, active_package_id: nil, phone_number: nil)}
+          {:error, reason} ->
+            IO.inspect(reason, label: "STK push error")
+            {:noreply, assign(socket, :payment_status, "Failed to send STK push.")}
+        end
 
       {:error, changeset} ->
-        IO.inspect(changeset, label: "Failed to save payment")
-        {:noreply, socket}
+        {:noreply,
+         assign(socket, :payment_status, "Failed to save payment record. Check your input.")}
     end
-
-    #insert payments to payments table with status pending
-    #wait to validate payment from callback, once validated, insert to table
-#     Update the RADIUS database:
-# Create or update the user in the radcheck table with their username and password.
-# Add their session duration or other package details in the radreply table.
-
-    {:noreply, assign(socket, active_package_id: nil, phone_number: nil)}
   end
+
+  # @impl true
+  # def handle_event("process_payment", %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac}, socket) do
+  #   user = socket.assigns.user
+
+  #   # Prepare payment data
+  #   amount = Decimal.new(price)
+  #   transaction_description = "Payment for package #{package_id}"
+  #   account_reference = mac
+
+  #   case QserveIspApi.MpesaApi.initiate_payment(user.id, package_id, amount, phone, account_reference, transaction_description) do
+  #     {:ok, payment} ->
+  #       {:noreply, assign(socket, active_package_id: nil, phone_number: nil)}
+
+  #     {:error, reason} ->
+  #       IO.inspect(reason, label: "Payment initiation failed")
+  #       {:noreply, socket}
+  #   end
+  # end
+
 
 
   defp get_mac_from_url(url) do

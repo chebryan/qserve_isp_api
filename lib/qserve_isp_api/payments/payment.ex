@@ -3,21 +3,40 @@ defmodule QserveIspApi.Payments.Payment do
   import Ecto.Changeset
 
   schema "payments" do
-    field :username, :string
-    field :package_id, :integer
     field :user_id, :integer
-    field :amount_paid, :decimal
-    field :payment_status, :string
-    field :mpesa_code, :string
+    field :amount, :decimal
+    field :phone_number, :string
+    field :status, :string, default: "pending" # pending, completed, failed
+    field :account_reference, :string
+    field :transaction_description, :string
+    field :package_id, :integer
+    field :username, :string
 
-    timestamps(type: :utc_datetime)
+    timestamps()
   end
 
   @doc false
   def changeset(payment, attrs) do
     payment
-    |> cast(attrs, [:username, :package_id, :user_id, :amount_paid, :payment_status, :mpesa_code])
-    |> validate_required([:username, :package_id, :user_id, :amount_paid, :payment_status])
-    |> validate_number(:amount_paid, greater_than_or_equal_to: 0)
+    |> cast(attrs, [
+      :user_id,
+      :amount,
+      :phone_number,
+      :status,
+      :account_reference,
+      :transaction_description,
+      :package_id,
+      :username
+    ])
+    |> validate_required([
+      :user_id,
+      :amount,
+      :phone_number,
+      :account_reference,
+      :transaction_description,
+      :package_id,
+      :username
+    ])
+    |> validate_inclusion(:status, ["pending", "completed", "failed"])
   end
 end

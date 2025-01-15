@@ -2,7 +2,7 @@ defmodule QserveIspApi.Payments do
     alias QserveIspApi.Repo
     alias QserveIspApi.Payments.Payment
     alias QserveIspApi.Packages.Packages
-    alias QserveIspApi.Radreply
+    alias QserveIspApi.Radius.Radreply
     alias QserveIspApi.MpesaClient  # Placeholder for the M-Pesa STK push logic
 
     @doc """
@@ -27,6 +27,29 @@ defmodule QserveIspApi.Payments do
           {:error, changeset}
       end
     end
+
+    def mark_payment_as_successful(payment_id) do
+      payment = Repo.get!(Payment, payment_id)
+
+      Repo.transaction(fn ->
+        # Update payment status
+        Repo.update!(Ecto.Changeset.change(payment, %{status: "completed"}))
+
+        # Add to radcheck and radreply
+        QserveIspApi.Radius.Radcheck.add_or_update_radcheck(payment.account_reference, generate_secret())
+        QserveIspApi.Radius.Radreply.add_radreply_details(payment.account_reference, 86400)
+      end)
+    end
+
+    def mark_payment_as_failed(payment_id) do
+      payment = Repo.get!(Payment, payment_id)
+      Repo.update!(Ecto.Changeset.change(payment, %{status: "failed"}))
+    end
+
+    defp generate_secret do
+      :crypto.strong_rand_bytes(12) |> Base.encode64() |> binary_part(0, 12)
+    end
+
 
     @doc """
     Handles the M-Pesa callback and updates payment status.

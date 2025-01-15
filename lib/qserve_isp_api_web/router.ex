@@ -16,7 +16,9 @@ defmodule QserveIspApiWeb.Router do
 
   scope "/", QserveIspApiWeb do
     pipe_through :browser
-    live "/hs", HotspotLive
+    live "/hs/:username/:nas_ipaddress", HotspotLive, :home
+    # get "/hs/:username/:nas_ipaddress", HotspotController, :home
+
     # scope "/hs"do
     #   # get "/:username/:nas_ipaddress", HotspotController, :home
     #   live "/hotspot", HotspotLive
@@ -53,6 +55,9 @@ defmodule QserveIspApiWeb.Router do
     post "/register", AuthController, :register
     scope "/nas" do
      post "/radcheck", NasController, :insert_radcheck
+    end
+    scope "/pay"do
+      post "/callback", MpesaController, :handle_callback
     end
 
 

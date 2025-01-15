@@ -61,7 +61,8 @@ defmodule QserveIspApi.MixProject do
       {:bandit, "~> 1.5"},
       {:argon2_elixir, "~> 3.0"},
       {:joken, "~> 2.5"},
-      {:bcrypt_elixir, "~> 3.0"}
+      {:bcrypt_elixir, "~> 3.0"},
+      {:httpoison, "~> 1.8"},
     ]
   end
 
