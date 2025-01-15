@@ -10,10 +10,14 @@ defmodule QserveIspApiWeb.MpesaController do
   Handle M-Pesa payment callback.
   """
   def handle_callback(conn, %{"Body" => %{"stkCallback" => callback}}) do
+
+
     Repo.transaction(fn ->
       # Extract relevant details
       result_code = callback["ResultCode"]
       result_desc = callback["ResultDesc"]
+      IO.inspect(callback, label: "=============CALLBACK RESPONSE===============")
+
       payment_id = extract_payment_id(callback)
       transaction_id = extract_transaction_id(callback)
 
@@ -55,11 +59,19 @@ defmodule QserveIspApiWeb.MpesaController do
     send_resp(conn, :ok, "Callback processed successfully")
   end
 
-  defp extract_payment_id(callback) do
-    Enum.find_value(callback["CallbackMetadata"]["Item"], fn %{"Name" => name, "Value" => value} ->
-      if name == "PaymentID", do: value, else: nil
+  # defp extract_payment_id(callback) do
+  #   Enum.find_value(callback["CallbackMetadata"]["Item"], fn %{"Name" => name, "Value" => value} ->
+  #     if name == "PaymentID", do: value, else: nil
+  #   end)
+  # end
+
+  defp extract_payment_id(data) do
+    Enum.find_value(data, fn
+      %{"Name" => "PaymentID", "Value" => payment_id} -> payment_id
+      _ -> nil
     end)
   end
+
 
   defp extract_transaction_id(callback) do
     Enum.find_value(callback["CallbackMetadata"]["Item"], fn %{"Name" => name, "Value" => value} ->
