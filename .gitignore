@@ -30,10 +30,10 @@ qserve_isp_api-*.tar
 /priv/static/
 # Ignore digested assets cache.
 /priv/static/cache_manifest.json
-/config/
+#/config/
 #sawa
-/config/prod.exs
-/config/runtime.exs
+#/config/prod.exs
+#/config/runtime.exs
 
 
 # In case you use Node.js/npm, you want to ignore these.
