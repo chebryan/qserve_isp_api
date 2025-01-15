@@ -55,7 +55,14 @@ defmodule QserveIspApiWeb.HotspotLive do
   def handle_event("process_payment", %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac}, socket) do
     user = socket.assigns.user
     # amount = Decimal.new(price)
-    amount = Decimal.to_integer(price)
+    # amount = Decimal.to_integer(price)
+
+    amount =
+      case Decimal.new(price) do
+        %Decimal{} = decimal -> Decimal.to_integer(decimal)
+        _ -> 0 # Handle invalid price inputs gracefully
+      end
+
     account_reference = mac
     transaction_description = "Payment for package #{package_id}"
 
