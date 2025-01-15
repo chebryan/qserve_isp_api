@@ -73,9 +73,11 @@ defmodule QserveIspApi.MpesaApi do
     with {:ok, credentials} <- fetch_credentials(user_id),
          {:ok, token} <- generate_token(credentials) do
       timestamp = Timex.now() |> Timex.format!("{YYYY}{0M}{0D}{h24}{m}{s}")
-      password =
-        :crypto.hash(:sha256, "#{credentials.short_code}#{credentials.passkey}#{timestamp}")
-        |> Base.encode64()
+      password = Base.encode64("#{credentials.short_code}#{credentials.passkey}#{timestamp}")
+        # password =
+        #   :crypto.hash(:sha256, "#{credentials.short_code}#{credentials.passkey}#{timestamp}")
+        #   |> Base.encode64()
+
 
       headers = [
         {"Authorization", "Bearer #{token}"},
