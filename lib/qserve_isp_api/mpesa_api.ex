@@ -2,6 +2,8 @@ defmodule QserveIspApi.MpesaApi do
   alias QserveIspApi.Repo
   alias QserveIspApi.Mpesa.Credential
   require Logger
+  use Timex
+
 
   @mpesa_config Application.compile_env(:qserve_isp_api, :mpesa)
 
