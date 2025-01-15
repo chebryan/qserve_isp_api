@@ -17,6 +17,32 @@ defmodule QserveIspApi.MpesaApi do
     end
   end
 
+  def normalize_phone_number_(phone_number) do
+    case String.starts_with?(phone_number, "0") do
+      true -> "254" <> String.slice(phone_number, 1..-1)
+      false -> phone_number
+    end
+  end
+
+  def normalize_phone_number(phone_number) when is_binary(phone_number) do
+    cond do
+      String.starts_with?(phone_number, "0") ->
+        "254" <> String.slice(phone_number, 1..-1)
+
+      String.starts_with?(phone_number, "7") ->
+        "254" <> phone_number
+
+      String.starts_with?(phone_number, "1") ->
+        "254" <> phone_number
+
+      String.starts_with?(phone_number, "+") ->
+        String.slice(phone_number, 1..-1)
+
+      true ->
+        phone_number
+    end
+  end
+
   @doc """
   Generate M-Pesa access token using the user's credentials.
   """
@@ -43,6 +69,7 @@ defmodule QserveIspApi.MpesaApi do
   Send an STK push request to M-Pesa.
   """
   def send_stk_push(user_id, payment_id, amount, phone_number, account_reference, transaction_description) do
+    normalized_phone_number = normalize_phone_number(phone_number)
     with {:ok, credentials} <- fetch_credentials(user_id),
          {:ok, token} <- generate_token(credentials) do
       timestamp = Timex.now() |> Timex.format!("{YYYY}{0M}{0D}{h24}{m}{s}")
@@ -61,9 +88,9 @@ defmodule QserveIspApi.MpesaApi do
         "Timestamp" => timestamp,
         "TransactionType" => "CustomerPayBillOnline",
         "Amount" => amount,
-        "PartyA" => phone_number,
+        "PartyA" => normalized_phone_number,
         "PartyB" => credentials.short_code,
-        "PhoneNumber" => phone_number,
+        "PhoneNumber" => normalized_phone_number,
         "CallBackURL" => @mpesa_config[:callback_url],
         "AccountReference" => account_reference,
         "TransactionDesc" => transaction_description,
