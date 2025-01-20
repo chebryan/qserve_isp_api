@@ -97,7 +97,7 @@ defmodule QserveIspApiWeb.NasController do
 
   defp generate_ip do
     case Repo.all(from n in Nas, order_by: [desc: n.server], limit: 1, select: n.server) do
-      [last_ip] ->
+      [last_ip] when is_binary(last_ip) ->
         next_ip(last_ip)
 
       [] ->
