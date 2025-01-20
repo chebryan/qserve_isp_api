@@ -102,9 +102,10 @@ defmodule QserveIspApiWeb.NasController do
 
       [] ->
         # If no IP exists, start with the first IP in the pool
-        "172.20.0.5"
+        "172.20.0.4"
     end
   end
+
 
   defp next_ip(last_ip) do
     case String.split(last_ip, ".") do
@@ -129,6 +130,9 @@ defmodule QserveIspApiWeb.NasController do
         raise "Invalid IP format in database: #{last_ip}"
     end
   end
+
+  defp next_ip(nil), do: "172.20.0.4"
+
 
 
 
