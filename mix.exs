@@ -64,7 +64,8 @@ defmodule QserveIspApi.MixProject do
       {:joken, "~> 2.5"},
       {:bcrypt_elixir, "~> 3.0"},
       {:httpoison, "~> 1.8"},
-      {:timex, "~> 3.7"}
+      {:timex, "~> 3.7"},
+      {:logger_file_backend, "~> 0.0.13"}
     ]
   end
 
