@@ -2,10 +2,10 @@ import Config
 
 # Configure your database
 config :qserve_isp_api, QserveIspApi.Repo,
-  username: "root",
-  password: "Brianqbet@5!",
+  username: "postgres",
+  password: "postgres",
   hostname: "localhost",
-  database: "qserve_isp_api_dev",
+  database: "qserve_isp",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10

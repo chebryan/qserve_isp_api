@@ -6,6 +6,7 @@ defmodule QserveIspApiWeb.MpesaController do
   alias QserveIspApi.MpesaTransactions.MpesaTransaction
   alias QserveIspApi.Mpesa
   alias QserveIspApi.Packages.Package
+  alias QserveIspApiWeb.Utils.AuthUtils
 
 
   @doc """
@@ -168,22 +169,34 @@ defmodule QserveIspApiWeb.MpesaController do
   end
 
   def add_credentials(conn, %{"credentials" => credentials_params}) do
-    case Mpesa.add_or_update_credentials(credentials_params) do
-      {:ok, _credential} ->
-        conn
-        |> put_status(:ok)
-        |> json(%{message: "M-Pesa credentials saved successfully"})
+    case AuthUtils.extract_user_id(conn) do
+      {:ok, user_id} ->
 
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{errors: changeset.errors})
+        updated_params = Map.put(credentials_params, "user_id", user_id)
 
-      {:error, reason} ->
-        conn
-        |> put_status(:internal_server_error)
-        |> json(%{error: reason})
-    end
+        case Mpesa.add_or_update_credentials(updated_params) do
+          {:ok, _credential} ->
+            conn
+            |> put_status(:ok)
+            |> json(%{message: "M-Pesa credentials saved successfully"})
+
+          {:error, changeset} ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(%{errors: changeset.errors})
+
+          {:error, reason} ->
+            conn
+            |> put_status(:internal_server_error)
+            |> json(%{error: reason})
+        end
+
+
+        {:error, reason} ->
+          conn
+          |> put_status(:unauthorized)
+          |> json(%{error: reason})
+      end
   end
 
 

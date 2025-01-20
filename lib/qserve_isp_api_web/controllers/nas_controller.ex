@@ -2,6 +2,7 @@ defmodule QserveIspApiWeb.NasController do
   use QserveIspApiWeb, :controller
   import Ecto.Query # Import Ecto.Query for using `from/2`
   require Logger
+  alias QserveIspApiWeb.Utils.AuthUtils
 
   alias QserveIspApi.{Repo, Nas, Auth.JWT}
     alias QserveIspApi.VPNUser
@@ -43,6 +44,7 @@ defmodule QserveIspApiWeb.NasController do
           # Insert the NAS
           nas_params = %{
             "nasname" => nas_name,
+            "shortname" => nas_name,
             "description" => description,
             "server" => ip,
             "secret" => secret,
@@ -100,7 +102,7 @@ defmodule QserveIspApiWeb.NasController do
 
       [] ->
         # If no IP exists, start with the first IP in the pool
-        "172.20.0.1"
+        "172.20.0.5"
     end
   end
 
