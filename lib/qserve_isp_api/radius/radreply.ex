@@ -2,7 +2,7 @@ defmodule QserveIspApi.Radius.Radreply do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @primary_key false
+  @primary_key {:id, :id, autogenerate: true} # Auto-incrementing primary key
   schema "radreply" do
     field :username, :string
     field :attribute, :string

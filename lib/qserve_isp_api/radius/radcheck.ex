@@ -2,7 +2,7 @@ defmodule QserveIspApi.Radius.Radcheck do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @primary_key false
+  @primary_key {:id, :id, autogenerate: true} # Auto-incrementing primary key
   schema "radcheck" do
     field :username, :string
     field :attribute, :string
