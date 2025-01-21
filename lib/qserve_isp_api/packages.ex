@@ -84,7 +84,7 @@ end
       from p in Package,
         join: pn in "packages_nas", on: pn.package_id == p.id,
         join: n in Nas, on: pn.nas_id == n.id,
-        where: n.server == ^nas_ip,
+        where: n.nasname == ^nas_ip,
         select: p
     )
   end
