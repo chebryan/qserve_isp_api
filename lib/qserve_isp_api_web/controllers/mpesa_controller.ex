@@ -7,6 +7,7 @@ defmodule QserveIspApiWeb.MpesaController do
   alias QserveIspApi.Mpesa
   alias QserveIspApi.Packages.Package
   alias QserveIspApiWeb.Utils.AuthUtils
+  alias QserveIspApi.Mpesa.Credential
 
 
   @doc """
@@ -183,7 +184,7 @@ defmodule QserveIspApiWeb.MpesaController do
           {:error, changeset} ->
             conn
             |> put_status(:unprocessable_entity)
-            |> json(%{errors: changeset.errors})
+            |> json(%{errors: changeset_errors(changeset)})
 
           {:error, reason} ->
             conn
@@ -199,6 +200,161 @@ defmodule QserveIspApiWeb.MpesaController do
       end
   end
 
+  def add_shortcode(conn, %{"shortcode" => shortcode_params}) do
+    case AuthUtils.extract_user_id(conn) do
+      {:ok, user_id} ->
+        # Add user_id to the parameters
+        shortcode_params = Map.put(shortcode_params, "user_id", user_id)
 
+        case Mpesa.add_or_update_credentials(shortcode_params) do
+          {:ok, {:ok, %Credential{} = credential}} ->
+            conn
+            |> put_status(:created)
+            |> json(%{
+              message: "Shortcode added successfully",
+              data: %{
+                id: credential.id,
+                user_id: credential.user_id,
+                short_code: credential.short_code,
+                shortcode_type: credential.shortcode_type,
+                status: credential.status,
+                inserted_at: credential.inserted_at,
+                updated_at: credential.updated_at
+              }
+            })
+
+          {:ok, {:error, %Ecto.Changeset{} = changeset}} ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(%{errors: format_changeset_errors(changeset)})
+
+          {:error, reason} ->
+            conn
+            |> put_status(:internal_server_error)
+            |> json(%{error: inspect(reason)})
+
+          unexpected_response ->
+            conn
+            |> put_status(:internal_server_error)
+            |> json(%{error: "Unexpected response: #{inspect(unexpected_response)}"})
+        end
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: reason})
+    end
+  end
+
+  def set_active_credential(conn, %{"id" => id, "user_id" => user_id}) do
+    case Mpesa.set_active_credential(id, user_id) do
+      {:ok, credential} ->
+        conn
+        |> put_status(:ok)
+        |> json(%{message: "Active M-Pesa credential set successfully"})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: reason})
+    end
+  end
+
+  def list_user_credentials(conn, %{"user_id" => user_id}) do
+    credentials = Mpesa.list_credentials_for_user(user_id)
+
+    conn
+    |> put_status(:ok)
+    |> json(%{credentials: credentials})
+  end
+
+
+  # def add_shortcode(conn, %{"shortcode" => shortcode_params}) do
+  #   if is_nil(shortcode_params["user_id"]) do
+  #     conn
+  #     |> put_status(:bad_request)
+  #     |> json(%{error: "user_id is required"})
+  #   else
+  #     case Mpesa.add_or_update_credentials(shortcode_params) do
+  #       {:ok, credential} ->
+  #         conn
+  #         |> put_status(:created)
+  #         |> json(%{message: "Shortcode added successfully", credential: credential})
+
+  #       {:error, %Ecto.Changeset{} = changeset} ->
+  #         conn
+  #         |> put_status(:unprocessable_entity)
+  #         |> json(%{errors: changeset_errors(changeset)})
+
+  #       {:error, reason} ->
+  #         conn
+  #         |> put_status(:internal_server_error)
+  #         |> json(%{error: reason})
+  #     end
+  #   end
+  # end
+
+  # def add_shortcode(conn, %{"shortcode" => shortcode_params}) do
+  #   case Mpesa.add_or_update_credentials(shortcode_params) do
+  #     {:ok, credential} ->
+  #       conn
+  #       |> put_status(:created)
+  #       |> json(%{message: "Shortcode added successfully", credential: credential})
+
+  #     {:error, %Ecto.Changeset{} = changeset} ->
+  #       conn
+  #       |> put_status(:unprocessable_entity)
+  #       |> json(%{errors: changeset_errors(changeset)})
+
+  #     {:error, reason} ->
+  #       conn
+  #       |> put_status(:internal_server_error)
+  #       |> json(%{error: reason})
+  #   end
+  # end
+
+  # def add_shortcode(conn, %{"shortcode" => shortcode_params}) do
+  #   case AuthUtils.extract_user_id(conn) do
+  #     {:ok, user_id} ->
+  #       # Add user_id to the params
+  #       params_with_user = Map.put(shortcode_params, "user_id", user_id)
+
+  #       case Mpesa.add_shortcode(params_with_user) do
+  #         {:ok, shortcode} ->
+  #           conn
+  #           |> put_status(:created)
+  #           |> json(%{message: "Shortcode added successfully", data: shortcode})
+
+  #         {:error, changeset} ->
+  #           conn
+  #           |> put_status(:unprocessable_entity)
+  #           |> json(%{errors: changeset})
+
+  #         {:error, reason} ->
+  #           conn
+  #           |> put_status(:internal_server_error)
+  #           |> json(%{error: reason})
+  #       end
+
+  #     {:error, _reason} ->
+  #       conn
+  #       |> put_status(:unauthorized)
+  #       |> json(%{error: "Unauthorized"})
+  #   end
+  # end
+
+  defp changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Ecto.Changeset.apply_action(msg, opts)
+    end)
+  end
+
+  defp format_changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
+        String.replace(acc, "%{#{key}}", to_string(value))
+      end)
+    end)
+  end
 
 end

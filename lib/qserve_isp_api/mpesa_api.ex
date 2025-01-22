@@ -1,6 +1,7 @@
 defmodule QserveIspApi.MpesaApi do
   alias QserveIspApi.Repo
   alias QserveIspApi.Mpesa.Credential
+  alias QserveIspApi.MpesaTransactions.MpesaTransaction
   require Logger
   use Timex
 
@@ -68,44 +69,150 @@ defmodule QserveIspApi.MpesaApi do
   @doc """
   Send an STK push request to M-Pesa.
   """
+
   def send_stk_push(user_id, payment_id, amount, phone_number, account_reference, transaction_description) do
-    normalized_phone_number = normalize_phone_number(phone_number)
-    with {:ok, credentials} <- fetch_credentials(user_id),
-         {:ok, token} <- generate_token(credentials) do
-      timestamp = Timex.now() |> Timex.format!("{YYYY}{0M}{0D}{h24}{m}{s}")
-      password = Base.encode64("#{credentials.short_code}#{credentials.passkey}#{timestamp}")
-        # password =
-        #   :crypto.hash(:sha256, "#{credentials.short_code}#{credentials.passkey}#{timestamp}")
-        #   |> Base.encode64()
+    # Fetch active credentials for the user
+    credentials = MpesaCredentials.get_active_shortcode(user_id)
 
+    case credentials.shortcode_type do
+      "Paybill" ->
+        handle_paybill_stk_push(credentials, payment_id, amount, phone_number, account_reference, transaction_description)
 
-      headers = [
-        {"Authorization", "Bearer #{token}"},
-        {"Content-Type", "application/json"}
-      ]
+      "Tillno" ->
+        handle_tillno_stk_push(credentials, payment_id, amount, phone_number, account_reference, transaction_description)
 
-      body = %{
-        "BusinessShortCode" => credentials.short_code,
-        "Password" => password,
-        "Timestamp" => timestamp,
-        "TransactionType" => "CustomerPayBillOnline",
-        "Amount" => amount,
-        "PartyA" => normalized_phone_number,
-        "PartyB" => credentials.short_code,
-        "PhoneNumber" => normalized_phone_number,
-        "CallBackURL" => @mpesa_config[:callback_url],
-        "AccountReference" => account_reference,
-        "TransactionDesc" => transaction_description,
-        "PaymentID" => payment_id
-      }
+      "Kopokopo" ->
+        handle_kopokopo_payment(credentials, payment_id, amount, phone_number, account_reference, transaction_description)
 
-      case HTTPoison.post(@mpesa_config[:stk_push_url], Jason.encode!(body), headers) do
-        {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
-          {:ok, Jason.decode!(response_body)}
-
-        {:error, %HTTPoison.Error{reason: reason}} ->
-          {:error, reason}
-      end
+      _ ->
+        {:error, "Unsupported shortcode type"}
     end
   end
+
+
+  defp handle_paybill_stk_push(credentials, payment_id, amount, phone_number, account_reference, transaction_description) do
+    token = get_or_refresh_access_token(credentials)
+
+    payload = %{
+      "BusinessShortCode" => credentials.short_code,
+      "Password" => generate_password(credentials.short_code, credentials.passkey),
+      "Timestamp" => generate_timestamp(),
+      "TransactionType" => "CustomerPayBillOnline",
+      "Amount" => amount,
+      "PartyA" => phone_number,
+      "PartyB" => credentials.short_code,
+      "PhoneNumber" => phone_number,
+      "CallBackURL" => "https://your-callback-url.com/mpesa_callback",
+      "AccountReference" => account_reference,
+      "TransactionDesc" => transaction_description
+    }
+
+    send_request(credentials.stk_push_url, token, payload, payment_id)
+  end
+
+  defp handle_tillno_stk_push(credentials, payment_id, amount, phone_number, account_reference, transaction_description) do
+    token = get_or_refresh_access_token(credentials)
+
+    payload = %{
+      "BusinessShortCode" => credentials.till_no,
+      "Password" => generate_password(credentials.till_no, credentials.passkey),
+      "Timestamp" => generate_timestamp(),
+      "TransactionType" => "CustomerBuyGoodsOnline",
+      "Amount" => amount,
+      "PartyA" => phone_number,
+      "PartyB" => credentials.short_code,
+      "PhoneNumber" => phone_number,
+      "CallBackURL" => "https://your-callback-url.com/mpesa_callback",
+      "AccountReference" => account_reference,
+      "TransactionDesc" => transaction_description
+    }
+
+    send_request(credentials.stk_push_url, token, payload, payment_id)
+  end
+
+  defp handle_kopokopo_payment(credentials, _payment_id, amount, phone_number, account_reference, transaction_description) do
+    # Placeholder for Kopokopo integration
+    # You can replace this with actual Kopokopo API logic
+    {:error, "Kopokopo integration not implemented yet"}
+  end
+
+  defp send_request(url, token, payload, payment_id) do
+    case HTTPoison.post(
+           url,
+           Jason.encode!(payload),
+           [{"Authorization", "Bearer #{token}"}, {"Content-Type", "application/json"}]
+         ) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        response = Jason.decode!(body)
+        save_transaction(payment_id, response)
+        {:ok, response}
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
+    end
+  end
+
+  defp save_transaction(payment_id, response) do
+    Repo.insert!(%MpesaTransaction{
+      payment_id: payment_id,
+      checkout_request_id: response["CheckoutRequestID"],
+      merchant_request_id: response["MerchantRequestID"],
+      status: "initiated",
+      raw_response: response
+    })
+  end
+
+  defp generate_password(short_code, passkey) do
+    timestamp = generate_timestamp()
+    Base.encode64("#{short_code}#{passkey}#{timestamp}")
+  end
+
+  defp generate_timestamp do
+    Timex.format!(Timex.now(), "{YYYY}{0M}{0D}{h24}{0m}{0s}")
+  end
+
+  defp get_or_refresh_access_token(credentials) do
+    # Implement token generation/refresh logic using `credentials.consumer_key` and `credentials.consumer_secret`
+  end
+
+  # def send_stk_push(user_id, payment_id, amount, phone_number, account_reference, transaction_description) do
+  #   normalized_phone_number = normalize_phone_number(phone_number)
+  #   with {:ok, credentials} <- fetch_credentials(user_id),
+  #        {:ok, token} <- generate_token(credentials) do
+  #     timestamp = Timex.now() |> Timex.format!("{YYYY}{0M}{0D}{h24}{m}{s}")
+  #     password = Base.encode64("#{credentials.short_code}#{credentials.passkey}#{timestamp}")
+  #       # password =
+  #       #   :crypto.hash(:sha256, "#{credentials.short_code}#{credentials.passkey}#{timestamp}")
+  #       #   |> Base.encode64()
+
+
+  #     headers = [
+  #       {"Authorization", "Bearer #{token}"},
+  #       {"Content-Type", "application/json"}
+  #     ]
+
+  #     body = %{
+  #       "BusinessShortCode" => credentials.short_code,
+  #       "Password" => password,
+  #       "Timestamp" => timestamp,
+  #       "TransactionType" => "CustomerPayBillOnline",
+  #       "Amount" => amount,
+  #       "PartyA" => normalized_phone_number,
+  #       "PartyB" => credentials.short_code,
+  #       "PhoneNumber" => normalized_phone_number,
+  #       "CallBackURL" => @mpesa_config[:callback_url],
+  #       "AccountReference" => account_reference,
+  #       "TransactionDesc" => transaction_description,
+  #       "PaymentID" => payment_id
+  #     }
+
+  #     case HTTPoison.post(@mpesa_config[:stk_push_url], Jason.encode!(body), headers) do
+  #       {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
+  #         {:ok, Jason.decode!(response_body)}
+
+  #       {:error, %HTTPoison.Error{reason: reason}} ->
+  #         {:error, reason}
+  #     end
+  #   end
+  # end
 end

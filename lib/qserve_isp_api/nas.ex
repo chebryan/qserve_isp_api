@@ -1,42 +1,104 @@
 defmodule QserveIspApi.Nas do
-  use Ecto.Schema
-  import Ecto.Changeset
 
-  @derive {Jason.Encoder, only: [
-    :id, :nasname, :shortname, :type, :ports, :secret, :server, :community,
-    :description, :user_id, :inserted_at, :updated_at
-  ]}
-  schema "nas" do
-    field :nasname, :string
-    field :shortname, :string
-    field :type, :string
-    field :ports, :integer
-    field :secret, :string
-    field :server, :string
-    field :community, :string
-    field :description, :string
+  import Ecto.Query, warn: false
+  alias QserveIspApi.Repo
+  alias QserveIspApi.Nas.Nas
 
-    many_to_many :packages, QserveIspApi.Packages.Package, join_through: "packages_nas"
-    belongs_to :user, QserveIspApi.User
 
-    timestamps()
+  @doc """
+  Returns the list of NAS.
+  """
+  def list_nas do
+    Repo.all(Nas)
   end
 
-  @doc false
-  def changeset(nas, attrs) do
+  @doc """
+  Gets a single NAS by ID.
+  """
+  def get_nas!(id), do: Repo.get!(Nas, id)
+
+    @doc """
+  Returns the list of NAS entries for a specific user.
+  """
+  # def list_user_nas(user_id) do
+  #   from(n in Nas, where: n.user_id == ^user_id)
+  #   |> Repo.all()
+  # end
+  def list_user_nas(user_id) do
+    QserveIspApi.Repo.all(
+      from n in Nas,
+        where: n.user_id == ^user_id
+    )
+    |> Enum.map(&add_status/1)
+  end
+
+  # Helper function to add the status
+  # defp add_status(nas) do
+  #   status =
+  #     case :gen_tcp.connect(String.to_charlist(nas.nasname), 22, [:binary, active: false, timeout: 1000]) do
+  #       {:ok, _socket} ->
+  #         :online
+  #       {:error, _reason} ->
+  #         :offline
+  #     end
+
+  #   Map.put(nas, :status, status)
+  # end
+
+  defp add_status(nas) do
+    status =
+      case System.cmd("ping", ["-c", "1", nas.nasname]) do
+        {_, 0} -> "online"
+        _ -> "offline"
+      end
+
+    Map.put(nas, :status, status)
+  end
+
+  # defp add_status2(nas) do
+  #   case System.cmd("ping", ["-c", "1", nas.nasname]) do
+  #     {_, 0} -> :online
+  #     _ -> :offline
+  #   end
+  # end
+
+  @doc """
+  Gets a single NAS entry for a specific user.
+  """
+  def get_user_nas(user_id, id) do
+    from(n in Nas, where: n.user_id == ^user_id and n.id == ^id)
+    |> Repo.one()
+  end
+
+  @doc """
+  Creates a new NAS entry.
+  """
+  def create_nas(attrs \\ %{}) do
+    %Nas{}
+    |> Nas.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an existing NAS entry.
+  """
+  def update_nas(%Nas{} = nas, attrs) do
     nas
-    |> cast(attrs, [
-      :nasname,
-      :shortname,
-      :type,
-      :ports,
-      :secret,
-      :server,
-      :community,
-      :description,
-      :user_id,
-    ])
-    |> validate_required([:nasname, :user_id])
-    |> assoc_constraint(:user)
+    |> Nas.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a NAS entry.
+  """
+  def delete_nas(%Nas{} = nas) do
+    Repo.delete(nas)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking NAS changes.
+  """
+  def change_nas(%Nas{} = nas, attrs \\ %{}) do
+    Nas.changeset(nas, attrs)
   end
 end

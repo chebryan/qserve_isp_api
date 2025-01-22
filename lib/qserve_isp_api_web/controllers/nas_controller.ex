@@ -4,13 +4,128 @@ defmodule QserveIspApiWeb.NasController do
   require Logger
   alias QserveIspApiWeb.Utils.AuthUtils
 
-  alias QserveIspApi.{Repo, Nas, Auth.JWT}
-    alias QserveIspApi.VPNUser
+  alias QserveIspApi.{Repo,Nas, Auth.JWT}
+  alias QserveIspApi.VPNUser
+  # alias QserveIspApi.Nas.Nas
 
 
   # @ip_pool "172.20." # Starting IP pool for auto-generation
   @secret_length 10 # Length of the secret
 
+  # def index(conn, _params) do
+  #   user_id = AuthUtils.extract_user_id(conn)  # Extract the logged-in user's ID
+  #   nas_list = QserveIspApi.Nas.list_user_nas(user_id)
+
+  #   conn
+  #   |> put_status(:ok)
+  #   |> json(%{nas: nas_list})
+  # end
+  def index(conn, _params) do
+    case AuthUtils.extract_user_id(conn) do
+      {:ok, user_id} ->
+        nas_list = Nas.list_user_nas(user_id)
+
+        conn
+        |> put_status(:ok)
+        |> json(%{nas: nas_list})
+
+      _error ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "Failed to retrieve user ID"})
+    end
+  end
+
+
+  # def index(conn, _params) do
+  #   case AuthUtils.extract_user_id(conn) do
+  #     {:ok, user_id} ->
+  #       nas_list = Nas.list_user_nas(user_id)
+  #       json(conn, %{data: nas_list})
+
+  #     {:error, reason} ->
+  #       conn
+  #       |> put_status(:unauthorized)
+  #       |> json(%{error: reason})
+  #   end
+  # end
+
+   @doc """
+  Show details of a single NAS entry for the logged-in user.
+  """
+  def show(conn, %{"id" => id}) do
+    case AuthUtils.extract_user_id(conn) do
+      {:ok, user_id} ->
+        case Nas.get_user_nas(user_id, id) do
+          nil ->
+            conn
+            |> put_status(:not_found)
+            |> json(%{error: "NAS not found"})
+
+          nas ->
+            json(conn, %{data: nas})
+        end
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: reason})
+    end
+  end
+  @doc """
+  Update a NAS entry for the logged-in user.
+  """
+  def update(conn, %{"id" => id, "nas" => nas_params}) do
+    case AuthUtils.extract_user_id(conn) do
+      {:ok, user_id} ->
+        case Nas.get_user_nas(user_id, id) do
+          nil ->
+            conn
+            |> put_status(:not_found)
+            |> json(%{error: "NAS not found"})
+
+          nas ->
+            case Nas.update_nas(nas, nas_params) do
+              {:ok, updated_nas} ->
+                json(conn, %{data: updated_nas})
+
+              {:error, changeset} ->
+                conn
+                |> put_status(:unprocessable_entity)
+                |> json(%{errors: changeset})
+            end
+        end
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: reason})
+    end
+  end
+  @doc """
+  Delete a NAS entry for the logged-in user.
+  """
+  def delete(conn, %{"id" => id}) do
+    case AuthUtils.extract_user_id(conn) do
+      {:ok, user_id} ->
+        case Nas.get_user_nas(user_id, id) do
+          nil ->
+            conn
+            |> put_status(:not_found)
+            |> json(%{error: "NAS not found"})
+
+          nas ->
+            with {:ok, _nas} <- Nas.delete_nas(nas) do
+              send_resp(conn, :no_content, "")
+            end
+        end
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: reason})
+    end
+  end
   @doc """
   Create a new NAS for the authenticated user.
   """
@@ -43,16 +158,16 @@ defmodule QserveIspApiWeb.NasController do
         {:ok, _params} ->
           # Insert the NAS
           nas_params = %{
-            "nasname" => nas_name,
+            "nasname" => ip,
             "shortname" => nas_name,
             "description" => description,
-            "server" => ip,
+            # "server" => ip,
             "secret" => secret,
             "user_id" => user_id,
             "port" => 3799
           }
 
-          case Repo.insert(Nas.changeset(%Nas{}, nas_params)) do
+          case Repo.insert(Nas.changeset(%QserveIspApi.Nas.Nas{}, nas_params)) do
             {:ok, nas} ->
               json(conn, %{message: "NAS created successfully", data: nas})
 
@@ -96,7 +211,7 @@ defmodule QserveIspApiWeb.NasController do
   # end
 
   defp generate_ip do
-    case Repo.all(from n in Nas, order_by: [desc: n.server], limit: 1, select: n.server) do
+    case Repo.all(from n in Nas, order_by: [desc: n.nasname], limit: 1, select: n.nasname) do
       [last_ip] when is_binary(last_ip) ->
         next_ip(last_ip)
 

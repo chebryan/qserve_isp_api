@@ -30,7 +30,7 @@ defmodule QserveIspApiWeb.Router do
   scope "/api", QserveIspApiWeb do
     pipe_through [:api, QserveIspApiWeb.Plugs.Authenticate]
     get "/resource", ResourceController, :index
-    resources "/nas", NasController, only: [:create]
+    resources "/nas", NasController, only: [:index, :show, :create, :update, :delete]
     scope "/nas" do
       get "/certificates/:ip", NasController, :certificates
       get "/openvpnfiles/:ip", NasController, :openvpn_files
@@ -41,8 +41,12 @@ defmodule QserveIspApiWeb.Router do
       post "/:package_id/associate_nas", PackageController, :associate_package_to_nas
     end
     scope "/mpesa" do
-      post "/credentials", MpesaController, :add_credentials
-      put "/credentials", MpesaController, :add_credentials
+      # post "/credentials", MpesaController, :add_credentials
+      # put "/credentials", MpesaController, :add_credentials
+      post "/shortcodes", MpesaController, :add_shortcode
+      put "/credentials/:id/activate", MpesaController, :set_active_credential
+      get "/credentials/:user_id", MpesaController, :list_user_credentials
+
     end
 
 
