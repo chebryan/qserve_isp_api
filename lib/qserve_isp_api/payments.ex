@@ -28,25 +28,25 @@ defmodule QserveIspApi.Payments do
       end
     end
 
-    def initiate_payment_(phone_number, package_id) do
-      package = Packages.get_package!(package_id)
+    # def initiate_payment_(phone_number, package_id) do
+    #   package = Packages.get_package!(package_id)
 
-      changeset =
-        %Payment{}
-        |> Payment.changeset(Map.merge(attrs, %{
-          amount_paid: package.price,
-          payment_status: :pending
-        }))
+    #   changeset =
+    #     %Payment{}
+    #     |> Payment.changeset(Map.merge(attrs, %{
+    #       amount_paid: package.price,
+    #       payment_status: :pending
+    #     }))
 
-      case Repo.insert(changeset) do
-        {:ok, payment} ->
-          send_stk_push(payment, attrs.phone_number)
-          {:ok, payment}
+    #   case Repo.insert(changeset) do
+    #     {:ok, payment} ->
+    #       send_stk_push(payment, attrs.phone_number)
+    #       {:ok, payment}
 
-        {:error, changeset} ->
-          {:error, changeset}
-      end
-    end
+    #     {:error, changeset} ->
+    #       {:error, changeset}
+    #   end
+    # end
 
     def mark_payment_as_successful(payment_id) do
       payment = Repo.get!(Payment, payment_id)
