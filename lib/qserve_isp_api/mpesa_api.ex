@@ -2,6 +2,7 @@ defmodule QserveIspApi.MpesaApi do
   alias QserveIspApi.Repo
   alias QserveIspApi.Mpesa.Credential
   alias QserveIspApi.MpesaTransactions.MpesaTransaction
+  alias QserveIspApi.Mpesa
   require Logger
   use Timex
 
