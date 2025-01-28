@@ -15,6 +15,7 @@ defmodule QserveIspApiWeb.MakePaymentLive do
     mac = params["mac"]
     username = params["username"]
     nas_ipaddress = params["nas_ipaddress"]
+
     package = Packages.get_package_details(package_id)
     # user = Repo.get_by(User, username: username)
 
@@ -32,15 +33,15 @@ defmodule QserveIspApiWeb.MakePaymentLive do
 
   end
 
-  def handle_event("submit_payment", %{"phone_number" => phone_number}, socket) do
-    # Initiate STK push
-    # Payments.initiate_payment(phone_number, socket.assigns.package.id)
-    # {:noreply, push_redirect(socket, to: Routes.live_path(socket, QserveIspApiWeb.VerifyPaymentLive, package: socket.assigns.package))}
-    {:noreply,
-    push_redirect(socket,
-      to: ~p"/verify_payment/#{socket.assigns.mac}/#{socket.assigns.nas_ipaddress}?package=#{socket.assigns.package.id}"
-    )}
-  end
+  # def handle_event("submit_payment", %{"phone_number" => phone_number}, socket) do
+  #   # Initiate STK push
+  #   # Payments.initiate_payment(phone_number, socket.assigns.package.id)
+  #   # {:noreply, push_redirect(socket, to: Routes.live_path(socket, QserveIspApiWeb.VerifyPaymentLive, package: socket.assigns.package))}
+  #   {:noreply,
+  #   push_redirect(socket,
+  #     to: ~p"/verify_payment/#{socket.assigns.mac}/#{socket.assigns.nas_ipaddress}?package=#{socket.assigns.package.id}"
+  #   )}
+  # end
 
 
   @impl true
@@ -120,10 +121,10 @@ end
           placeholder="Enter phone number"
           required
           style="width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px;">
-        <input type="hidden" name="package_id" value={ @package.id }>
-        <input type="hidden" name="price" value={ @package.price }>
-        <input type="hidden" name="mac" value={@mac }>
-        <input type="hidden" name="username" value={@username }>
+        <input type="text" name="package_id" value={ @package.id }>
+        <input type="text" name="price" value={ @package.price }>
+        <input type="text" name="mac" value={@mac }>
+        <input type="text" name="username" value={@username }>
         <button
           type="submit"
           style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px;">
@@ -131,11 +132,11 @@ end
         </button>
       </form>
 
-      <form phx-submit="submit_payment">
+      <%!-- <form phx-submit="submit_payment">
         <label for="phone_number">Enter Phone Number:</label>
         <input type="text" name="phone_number" id="phone_number" value={@phone_number } required />
         <button type="submit">Pay Now---</button>
-      </form>
+      </form> --%>
     </div>
     """
   end
