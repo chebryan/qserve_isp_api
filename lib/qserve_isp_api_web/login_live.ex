@@ -27,7 +27,7 @@ defmodule QserveIspApiWeb.LoginLive do
     end
   end
 
-  def handle_event("select_package", %{"package" => package, "mac" => mac, "nas_ipaddress" => nas_ipaddress}, socket) do
+  def handle_event("select_package", %{"package" => package, "mac" => mac, "nas_ipaddress" => nas_ipaddress, "username" => username}, socket) do
     IO.inspect(mac, label: "==============MAC===============")
     IO.inspect(nas_ipaddress, label: "=========NAS====================")
     IO.inspect(username, label: "=========username====================")
