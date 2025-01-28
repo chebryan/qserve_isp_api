@@ -33,6 +33,8 @@ qserve_isp_api-*.tar
 #/config/
 #sawa
 /config/prod.exs
+/config/dev.exs
+/config/config.exs
 /config/runtime.exs
 
 

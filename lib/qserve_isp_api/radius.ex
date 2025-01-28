@@ -9,6 +9,11 @@ defmodule QserveIspApi.Radius do
   @doc """
   Add or update a user's credentials in the `radcheck` table.
   """
+
+  def add_user_to_radius(username, passwor) do
+
+  end
+
   def add_or_update_radcheck(username, password) do
     query = from(rc in Radcheck, where: rc.username == ^username)
 

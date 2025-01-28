@@ -161,6 +161,14 @@ defmodule QserveIspApi.MpesaApi do
       raw_response: response
     })
   end
+  def check_payment_status(package) do
+    payment_status = Repo.get_by("payment", %{package_id: package.id})
+    if payment_status && payment_status.status == "completed" do
+      :success
+    else
+      :pending
+    end
+  end
 
   defp generate_password(short_code, passkey) do
     timestamp = generate_timestamp()

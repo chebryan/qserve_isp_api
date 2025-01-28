@@ -5,13 +5,35 @@ defmodule QserveIspApi.Packages do
 
   import Ecto.Query, warn: false
   alias QserveIspApi.Repo
-  alias QserveIspApi.Nas
+  alias QserveIspApi.Nas.Nas
   alias QserveIspApi.Packages.Package
 
 
   @doc """
   Returns the list of packages for a specific user.
   """
+    def get_user_details(mac) do
+      Repo.one(
+        from r in "radacct",
+          where: r.callingstationid == ^mac,
+          select: %{
+            username: r.username,
+            active: is_nil(r.acctstoptime),
+            nas_ipaddress: r.nasipaddress,
+            mac: r.callingstationid
+          }
+      )
+      || %{name: "Guest", active: false, mac: mac}
+    end
+
+  # def get_user_details(mac) do
+  #   user = Repo.get_by("radacct", %{callingstationid: mac})
+  #   if user do
+  #     %{name: user.username, active: user.acctstoptime == nil, nas_ipaddress: user.nasipaddress, mac: mac}
+  #   else
+  #     %{name: "Guest", active: false, mac: mac}
+  #   end
+  # end
 
   def list_packages_for_user(user_id) do
     Repo.all(from p in Package, where: p.user_id == ^user_id)

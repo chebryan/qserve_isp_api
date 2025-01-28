@@ -50,6 +50,29 @@ defmodule QserveIspApi.Payments do
       :crypto.strong_rand_bytes(12) |> Base.encode64() |> binary_part(0, 12)
     end
 
+    def check_payment_status(mac, package_id) do
+      payment_status = Repo.get_by("payment", %{mac: mac, package_id: package_id})
+      if payment_status && payment_status.status == "completed" do
+        :success
+      else
+        :pending
+      end
+    end
+
+
+    # def add_user_to_radius(package, mac) do
+    #   username = "user_#{mac}"
+    #         check_payment_status
+    #             Repo.insert!(%{
+    #               table: "radcheck",
+    #               attributes: %{username: mac, attribute: "Cleartext-Password", op: ":=", value: mac}
+    #             })
+
+    #             Repo.insert!(%{
+    #               table: "radreply",
+    #               attributes: %{username: mac, attribute: "Framed-IP-Address", op: ":=", value: "192.168.1.100"}
+    #             })
+    #           end
 
     @doc """
     Handles the M-Pesa callback and updates payment status.
@@ -92,6 +115,17 @@ defmodule QserveIspApi.Payments do
         value: "#{package.duration}"
       })
     end
+
+    # def check_payment_status(mac, package_id) do
+    #   payment_status = Repo.get_by("payment", %{mac: mac, package_id: package_id})
+    #   if payment_status && payment_status.status == "completed" do
+    #     :success
+    #   else
+    #     :pending
+    #   end
+    # end
+
+
 
     @doc """
     List all payments.
