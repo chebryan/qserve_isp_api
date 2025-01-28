@@ -37,7 +37,7 @@ defmodule QserveIspApiWeb.LoginLive do
     ~H"""
     <div>
       <h1>Login</h1>
-      <p>Welcome, <%= @user_details.name %></p>
+      <p>Welcome, <%= @user_details.username %></p>
       <ul>
         <%= for package <- @packages do %>
           <li>
