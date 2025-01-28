@@ -31,7 +31,7 @@ defmodule QserveIspApi.Packages do
         from r in "radacct",
           where: r.callingstationid == ^mac,
           select: %{
-            name: r.username, # Use :name for consistency
+            # name: r.username, # Use :name for consistency
             username: r.username,
             active: is_nil(r.acctstoptime),
             nas_ipaddress: r.nasipaddress,
