@@ -2,6 +2,8 @@ defmodule QserveIspApiWeb.LoginLive do
   use QserveIspApiWeb, :live_view
 
   alias QserveIspApi.Packages
+  alias QserveIspApiWeb.Router.Helpers, as: Routes
+
 
   def mount(params, _session, socket) do
     packages = Packages.list_packages_for_nas_ip(params["nas_ipaddress"])
