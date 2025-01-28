@@ -2,6 +2,8 @@ defmodule QserveIspApiWeb.MakePaymentLive do
   use QserveIspApiWeb, :live_view
 
   alias QserveIspApi.Payments
+  alias QserveIspApi.Packages
+
 
   def mount(params, _session, socket) do
     package_id = params["package"]
