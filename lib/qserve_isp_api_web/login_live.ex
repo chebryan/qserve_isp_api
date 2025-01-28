@@ -28,17 +28,16 @@ defmodule QserveIspApiWeb.LoginLive do
     IO.inspect(nas_ipaddress, label: "=========NAS====================")
     # with %{nas_ipaddress: nas_ipaddress, mac: mac} <- socket.assigns.user_details,
     #      true <- not is_nil(mac) and not is_nil(nas_ipaddress) do
-    if not is_nil(mac) and not is_nil(nas_ipaddress) do
-      # Redirect to Make Payment page with validated parameters
-      {:noreply,
-       push_redirect(socket,
-         to: ~p"/make_payment/#{mac}/#{nas_ipaddress}/#{mac}?package=#{package}"
-       )}
-    else
-      _error ->
+      if not is_nil(mac) and not is_nil(nas_ipaddress) do
+        # Redirect to the Make Payment page with validated parameters
         {:noreply,
-         put_flash(socket, :error, "Missing required user details. Please try again.")}
-    end
+         push_redirect(socket,
+           to: ~p"/make_payment/#{mac}/#{nas_ipaddress}/#{mac}?package=#{package}"
+         )}
+      else
+        {:noreply,
+         put_flash(socket, :error, "Missing required details. Please try again.")}
+      end
   end
 
   # def mount(params, _session, socket) do
