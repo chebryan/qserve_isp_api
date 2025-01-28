@@ -16,7 +16,18 @@ defmodule QserveIspApiWeb.LoginLive do
   end
 
   def handle_event("select_package", %{"package" => package}, socket) do
-    {:noreply, push_redirect(socket, to: ~p"/make_payment/#{socket.assigns.user_details.name}/#{socket.assigns.user_details.nas_ipaddress}/#{socket.assigns.user_details.mac}?package=#{package}")}
+    with %{name: name, nas_ipaddress: nas_ipaddress, mac: mac} <- socket.assigns.user_details,
+         true <- not is_nil(name) and not is_nil(nas_ipaddress) and not is_nil(mac) do
+      # Redirect to Make Payment page with validated parameters
+      {:noreply,
+       push_redirect(socket,
+         to: ~p"/make_payment/#{name}/#{nas_ipaddress}/#{mac}?package=#{package}"
+       )}
+    else
+      _error ->
+        {:noreply,
+         put_flash(socket, :error, "Missing required user details. Please try again.")}
+    end
   end
 
   # def mount(params, _session, socket) do
