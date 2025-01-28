@@ -12,6 +12,20 @@ defmodule QserveIspApi.Packages do
   @doc """
   Returns the list of packages for a specific user.
   """
+    # def get_user_details(mac) do
+    #   Repo.one(
+    #     from r in "radacct",
+    #       where: r.callingstationid == ^mac,
+    #       select: %{
+    #         username: r.username,
+    #         active: is_nil(r.acctstoptime),
+    #         nas_ipaddress: r.nasipaddress,
+    #         mac: r.callingstationid
+    #       }
+    #   )
+    #   || %{name: "Guest", active: false, mac: mac}
+    # end
+
     def get_user_details(mac) do
       Repo.one(
         from r in "radacct",
@@ -23,7 +37,7 @@ defmodule QserveIspApi.Packages do
             mac: r.callingstationid
           }
       )
-      || %{name: "Guest", active: false, mac: mac}
+      || %{username: "Guest", active: false, nas_ipaddress: nil, mac: mac}
     end
 
   # def get_user_details(mac) do
