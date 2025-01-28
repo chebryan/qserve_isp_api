@@ -62,7 +62,7 @@ defmodule QserveIspApiWeb.LoginLive do
       <ul>
         <%= for package <- @packages do %>
           <li>
-            <button phx-click="select_package" phx-value-package={ package.id }  phx-value-mac={ @mac }   phx-value-nas_ipaddress={ @nas_ipaddress }>
+            <button phx-click="select_package" phx-value-package={ package }  phx-value-mac={ @mac }   phx-value-nas_ipaddress={ @nas_ipaddress }>
               <%= package.name %> - <%= package.price %>
             </button>
           </li>
