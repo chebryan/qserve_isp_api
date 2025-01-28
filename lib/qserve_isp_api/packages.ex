@@ -31,14 +31,16 @@ defmodule QserveIspApi.Packages do
         from r in "radacct",
           where: r.callingstationid == ^mac,
           select: %{
+            name: r.username, # Use :name for consistency
             username: r.username,
             active: is_nil(r.acctstoptime),
             nas_ipaddress: r.nasipaddress,
             mac: r.callingstationid
           }
       )
-      || %{username: "Guest", active: false, nas_ipaddress: nil, mac: mac}
+      || %{name: "Guest", username: "Guest", active: false, nas_ipaddress: nil, mac: mac}
     end
+  # end
 
   # def get_user_details(mac) do
   #   user = Repo.get_by("radacct", %{callingstationid: mac})
