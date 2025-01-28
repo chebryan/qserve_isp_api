@@ -3,6 +3,11 @@ defmodule QserveIspApiWeb.MakePaymentLive do
 
   alias QserveIspApi.Payments
   alias QserveIspApi.Packages
+  alias QserveIspApi.Repo
+  alias QserveIspApi.User
+  alias QserveIspApi.Payments.Payment
+  alias QserveIspApi.MpesaApi
+  alias QserveIspApi.MpesaTransactions.MpesaTransaction
 
 
   def mount(params, _session, socket) do
@@ -34,15 +39,99 @@ defmodule QserveIspApiWeb.MakePaymentLive do
     )}
   end
 
+
+  @impl true
+  def handle_event(
+      "process_payment",
+      %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac},
+      socket
+    ) do
+  user = socket.assigns.user
+  # amount = Decimal.new(price)
+   amount =
+      case Decimal.new(price) do
+        %Decimal{} = decimal -> Decimal.to_integer(decimal)
+        _ -> 0 # Handle invalid price inputs gracefully
+      end
+  transaction_description = "Payment for package #{package_id}"
+  Repo.transaction(fn ->
+    # Step 1: Save payment in the payments table
+    {:ok, payment} =
+      %Payment{}
+      |> Payment.changeset(%{
+        user_id: user.id,
+        package_id: String.to_integer(package_id),
+        amount: amount,
+        phone_number: phone,
+        status: "pending",
+        username: mac,
+        account_reference: mac,
+        transaction_description: transaction_description
+
+      })
+      |> Repo.insert()
+
+    # Step 2: Send STK push
+
+
+    stk_response =
+      case MpesaApi.send_stk_push(
+             user.id,
+             payment.id,
+             amount,
+             phone,
+             mac,
+             transaction_description
+           ) do
+        {:ok, response} ->
+          response
+
+        {:error, reason} ->
+          raise "Failed to send STK push: #{reason}"
+      end
+
+    # Step 3: Save STK push response in mpesa_transactions table
+    Repo.insert!(%MpesaTransaction{
+          payment_id: payment.id,
+          checkout_request_id: stk_response["CheckoutRequestID"],
+          merchant_request_id: stk_response["MerchantRequestID"],
+          status: "initiated",
+          raw_response: stk_response
+        })
+      end)
+
+  {:noreply,
+   assign(socket, :payment_status, "STK push sent successfully! Please wait for confirmation.")}
+end
+
   def render(assigns) do
     ~H"""
     <div>
       <h1>Make Payment</h1>
       <p>Package: <%= @package.name %> - Price: <%= @package.price %></p>
+
+      <form style="margin-top: 12px;" phx-submit="process_payment">
+        <input
+          type="tel"
+          name="phone_number"
+          placeholder="Enter phone number"
+          required
+          style="width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        <input type="hidden" name="package_id" value={ @package.id }>
+        <input type="hidden" name="price" value={ @package.price }>
+        <input type="hidden" name="mac" value={@mac }>
+
+        <button
+          type="submit"
+          style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px;">
+          Pay NOW
+        </button>
+      </form>
+
       <form phx-submit="submit_payment">
         <label for="phone_number">Enter Phone Number:</label>
         <input type="text" name="phone_number" id="phone_number" value={@phone_number } required />
-        <button type="submit">Pay Now</button>
+        <button type="submit">Pay Now---</button>
       </form>
     </div>
     """

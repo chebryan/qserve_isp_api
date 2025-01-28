@@ -28,6 +28,26 @@ defmodule QserveIspApi.Payments do
       end
     end
 
+    def initiate_payment_(phone_number, package_id)
+      package = Packages.get_package!(package_id)
+
+      changeset =
+        %Payment{}
+        |> Payment.changeset(Map.merge(attrs, %{
+          amount_paid: package.price,
+          payment_status: :pending
+        }))
+
+      case Repo.insert(changeset) do
+        {:ok, payment} ->
+          send_stk_push(payment, attrs.phone_number)
+          {:ok, payment}
+
+        {:error, changeset} ->
+          {:error, changeset}
+      end
+    end
+
     def mark_payment_as_successful(payment_id) do
       payment = Repo.get!(Payment, payment_id)
 
@@ -98,6 +118,8 @@ defmodule QserveIspApi.Payments do
       end)
     end
 
+    send_stk_push(user_id, payment_id, amount, phone_number, account_reference, transaction_description)
+
     defp send_stk_push(payment, phone_number) do
       MpesaClient.stk_push(%{
         phone_number: phone_number,
@@ -156,4 +178,4 @@ defmodule QserveIspApi.Payments do
       |> Payment.changeset(attrs)
       |> Repo.update()
     end
-  end
+  # end
