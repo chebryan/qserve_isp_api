@@ -26,8 +26,9 @@ defmodule QserveIspApiWeb.LoginLive do
   def handle_event("select_package", %{"package" => package, "mac" => mac, "nas_ipaddress" => nas_ipaddress}, socket) do
     IO.inspect(mac, label: "==============MAC===============")
     IO.inspect(nas_ipaddress, label: "=========NAS====================")
-    with %{nas_ipaddress: nas_ipaddress, mac: mac} <- socket.assigns.user_details,
-         true <- not is_nil(mac) and not is_nil(nas_ipaddress) do
+    # with %{nas_ipaddress: nas_ipaddress, mac: mac} <- socket.assigns.user_details,
+    #      true <- not is_nil(mac) and not is_nil(nas_ipaddress) do
+    if not is_nil(mac) and not is_nil(nas_ipaddress) do
       # Redirect to Make Payment page with validated parameters
       {:noreply,
        push_redirect(socket,
