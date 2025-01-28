@@ -18,7 +18,8 @@ defmodule QserveIspApiWeb.MakePaymentLive do
     assign(socket,
       package: package,
       mac: mac,
-      nas_ipaddress: nas_ipaddress
+      nas_ipaddress: nas_ipaddress,
+      phone_number: ""
     )}
 
   end
