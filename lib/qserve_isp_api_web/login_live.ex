@@ -6,6 +6,7 @@ defmodule QserveIspApiWeb.LoginLive do
   def mount(params, _session, socket) do
     packages = Packages.list_packages_for_nas_ip(params["nas_ipaddress"])
     mac = params["mac"]
+    nas_ipaddress = params["nas_ipaddress"]
     user_details = Packages.get_user_details(mac)
 
     if user_details[:active] do
@@ -17,7 +18,7 @@ defmodule QserveIspApiWeb.LoginLive do
 
   def handle_event("select_package", %{"package" => package}, socket) do
     with %{username: mac, nas_ipaddress: nas_ipaddress, mac: mac} <- socket.assigns.user_details,
-         true <- not is_nil(mac) and not is_nil(nas_ipaddress) and not is_nil(mac) do
+         true <- not is_nil(mac) and not is_nil(nas_ipaddress) do
       # Redirect to Make Payment page with validated parameters
       {:noreply,
        push_redirect(socket,
