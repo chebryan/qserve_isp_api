@@ -16,7 +16,7 @@ defmodule QserveIspApiWeb.LoginLive do
     end
   end
 
-  def handle_event("select_package", %{"package" => package}, socket) do
+  def handle_event("select_package", %{"package" => package, "mac" => mac, "nas_ipaddress" => nas_ipaddress}, socket) do
     IO.inspect(mac, label: "==============MAC===============")
     IO.inspect(nas_ipaddress, label: "=========NAS====================")
     with %{nas_ipaddress: nas_ipaddress, mac: mac} <- socket.assigns.user_details,
@@ -55,7 +55,7 @@ defmodule QserveIspApiWeb.LoginLive do
       <ul>
         <%= for package <- @packages do %>
           <li>
-            <button phx-click="select_package" phx-value-package={ package.id }>
+            <button phx-click="select_package" phx-value-package={ package.id }  phx-value-mac={ @mac }   phx-value-nas_ipaddress={ @nas_ipaddress }>
               <%= package.name %> - <%= package.price %>
             </button>
           </li>
