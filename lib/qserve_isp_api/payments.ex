@@ -118,7 +118,7 @@ defmodule QserveIspApi.Payments do
       end)
     end
 
-    send_stk_push(user_id, payment_id, amount, phone_number, account_reference, transaction_description)
+    # send_stk_push(user_id, payment_id, amount, phone_number, account_reference, transaction_description)
 
     defp send_stk_push(payment, phone_number) do
       MpesaClient.stk_push(%{
