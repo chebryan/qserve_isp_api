@@ -43,7 +43,6 @@ defmodule QserveIspApiWeb.MakePaymentLive do
   #   )}
   # end
 
-
   @impl true
   def handle_event(
       "process_payment",

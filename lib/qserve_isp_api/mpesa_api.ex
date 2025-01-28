@@ -72,7 +72,7 @@ defmodule QserveIspApi.MpesaApi do
 
   def send_stk_push(user_id, payment_id, amount, phone_number, account_reference, transaction_description) do
     # Fetch active credentials for the user
-    credentials = MpesaCredentials.get_active_shortcode(user_id)
+    credentials = Mpesa.get_active_shortcode(user_id)
 
     case credentials.shortcode_type do
       "Paybill" ->
