@@ -28,7 +28,7 @@ defmodule QserveIspApi.Payments do
       end
     end
 
-    def initiate_payment_(phone_number, package_id)
+    def initiate_payment_(phone_number, package_id) do
       package = Packages.get_package!(package_id)
 
       changeset =
@@ -178,4 +178,4 @@ defmodule QserveIspApi.Payments do
       |> Payment.changeset(attrs)
       |> Repo.update()
     end
-  # end
+  end
