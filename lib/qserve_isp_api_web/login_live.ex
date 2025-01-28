@@ -12,7 +12,14 @@ defmodule QserveIspApiWeb.LoginLive do
     if user_details[:active] do
       {:ok, push_redirect(socket, to: ~p"/dashboard/#{params["username"]}/#{params["nas_ipaddress"]}/#{mac}")}
     else
-      {:ok, assign(socket, packages: packages, user_details: user_details)}
+      # {:ok, assign(socket, packages: packages, user_details: user_details)}
+      {:ok,
+      assign(socket,
+        packages: packages,
+        user_details: user_details,
+        mac: mac,
+        nas_ipaddress: nas_ipaddress
+      )}
     end
   end
 
