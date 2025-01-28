@@ -103,13 +103,13 @@ defmodule QserveIspApi.MpesaApi do
       "PartyA" => phone_number,
       "PartyB" => credentials.short_code,
       "PhoneNumber" => phone_number,
-      "CallBackURL" => "https://your-callback-url.com/mpesa_callback",
+      "CallBackURL" => "https://api.qserve-isp.net/api/pay/callback",
       "AccountReference" => account_reference,
       "TransactionDesc" => transaction_description
     }
-
     send_request(credentials.stk_push_url, token, payload, payment_id)
   end
+
 
   defp handle_tillno_stk_push(credentials, payment_id, amount, phone_number, account_reference, transaction_description) do
     token = get_or_refresh_access_token(credentials)
@@ -123,7 +123,7 @@ defmodule QserveIspApi.MpesaApi do
       "PartyA" => phone_number,
       "PartyB" => credentials.short_code,
       "PhoneNumber" => phone_number,
-      "CallBackURL" => "https://your-callback-url.com/mpesa_callback",
+      "CallBackURL" => "https://api.qserve-isp.net/api/pay/callback",
       "AccountReference" => account_reference,
       "TransactionDesc" => transaction_description
     }
