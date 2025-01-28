@@ -1,7 +1,7 @@
 defmodule QserveIspApiWeb.MakePaymentLive do
   use QserveIspApiWeb, :live_view
 
-  alias QserveIspApi.Payments
+  # alias QserveIspApi.Payments
   alias QserveIspApi.Packages
   alias QserveIspApi.Repo
   alias QserveIspApi.User
@@ -13,8 +13,10 @@ defmodule QserveIspApiWeb.MakePaymentLive do
   def mount(params, _session, socket) do
     package_id = params["package"]
     mac = params["mac"]
+    username = params["username"]
     nas_ipaddress = params["nas_ipaddress"]
     package = Packages.get_package_details(package_id)
+    # user = Repo.get_by(User, username: username)
 
 
     # {:ok, assign(socket, package: package, mac: mac, phone_number: "")}
@@ -23,6 +25,7 @@ defmodule QserveIspApiWeb.MakePaymentLive do
     assign(socket,
       package: package,
       mac: mac,
+      username: username,
       nas_ipaddress: nas_ipaddress,
       phone_number: ""
     )}
@@ -31,7 +34,7 @@ defmodule QserveIspApiWeb.MakePaymentLive do
 
   def handle_event("submit_payment", %{"phone_number" => phone_number}, socket) do
     # Initiate STK push
-    Payments.initiate_payment(phone_number, socket.assigns.package.id)
+    # Payments.initiate_payment(phone_number, socket.assigns.package.id)
     # {:noreply, push_redirect(socket, to: Routes.live_path(socket, QserveIspApiWeb.VerifyPaymentLive, package: socket.assigns.package))}
     {:noreply,
     push_redirect(socket,
@@ -43,10 +46,10 @@ defmodule QserveIspApiWeb.MakePaymentLive do
   @impl true
   def handle_event(
       "process_payment",
-      %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac},
+      %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac, "username" => username},
       socket
     ) do
-  user = socket.assigns.user
+  user = Repo.get_by(User, username: username)
   # amount = Decimal.new(price)
    amount =
       case Decimal.new(price) do
@@ -120,7 +123,7 @@ end
         <input type="hidden" name="package_id" value={ @package.id }>
         <input type="hidden" name="price" value={ @package.price }>
         <input type="hidden" name="mac" value={@mac }>
-
+        <input type="hidden" name="username" value={@username }>
         <button
           type="submit"
           style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px;">

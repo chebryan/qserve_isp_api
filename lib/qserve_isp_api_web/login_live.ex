@@ -7,6 +7,9 @@ defmodule QserveIspApiWeb.LoginLive do
     packages = Packages.list_packages_for_nas_ip(params["nas_ipaddress"])
     mac = params["mac"]
     nas_ipaddress = params["nas_ipaddress"]
+    username = params["username"]
+    # user = Repo.get_by(User, username: username)
+
     user_details = Packages.get_user_details(mac)
 
     if user_details[:active] do
@@ -18,7 +21,8 @@ defmodule QserveIspApiWeb.LoginLive do
         packages: packages,
         user_details: user_details,
         mac: mac,
-        nas_ipaddress: nas_ipaddress
+        nas_ipaddress: nas_ipaddress,
+        username: username
       )}
     end
   end
@@ -26,13 +30,16 @@ defmodule QserveIspApiWeb.LoginLive do
   def handle_event("select_package", %{"package" => package, "mac" => mac, "nas_ipaddress" => nas_ipaddress}, socket) do
     IO.inspect(mac, label: "==============MAC===============")
     IO.inspect(nas_ipaddress, label: "=========NAS====================")
+    IO.inspect(username, label: "=========username====================")
+
     # with %{nas_ipaddress: nas_ipaddress, mac: mac} <- socket.assigns.user_details,
     #      true <- not is_nil(mac) and not is_nil(nas_ipaddress) do
       if not is_nil(mac) and not is_nil(nas_ipaddress) do
         # Redirect to the Make Payment page with validated parameters
         {:noreply,
          push_redirect(socket,
-           to: ~p"/make_payment/#{mac}/#{nas_ipaddress}/#{mac}?package=#{package}"
+           to: ~p"/make_payment/#{username}/#{nas_ipaddress}/#{mac}?package=#{package}"
+          #  live "/make_payment/:username/:nas_ipaddress/:mac", MakePaymentLive, :index
          )}
       else
         {:noreply,
@@ -62,7 +69,7 @@ defmodule QserveIspApiWeb.LoginLive do
       <ul>
         <%= for package <- @packages do %>
           <li>
-            <button phx-click="select_package" phx-value-package={ package.id }  phx-value-mac={ @mac }   phx-value-nas_ipaddress={ @nas_ipaddress }>
+            <button phx-click="select_package" phx-value-package={ package.id }  phx-value-mac={ @mac }   phx-value-nas_ipaddress={ @nas_ipaddress }  phx-value-username={ @username }>
               <%= package.name %> - <%= package.price %>
             </button>
           </li>
