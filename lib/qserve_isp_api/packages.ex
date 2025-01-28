@@ -60,6 +60,10 @@ defmodule QserveIspApi.Packages do
 def get_package_for_user(id, user_id) do
   Repo.get_by(Package, id: id, user_id: user_id)
 end
+
+def get_package_details(id) do
+  Repo.get_by(Package, id: id)
+end
   @doc """
   Creates a package.
   """
