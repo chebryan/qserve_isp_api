@@ -39,7 +39,7 @@ defmodule QserveIspApi.MpesaTransactions.MpesaTransaction do
     |> cast(attrs, [:checkout_request_id, :phone_number, :amount, :package_id, :status, :user_id])
     # |> validate_required([:checkout_request_id, :phone_number, :amount, :package_id, :status, :user_id])
     |> validate_required([:checkout_request_id])
-    |> unique_constraint(:checkout_request_id, name: "mpesa_transactions_checkout_request_id_index")  # ✅ Added constraint handling
+    # |> unique_constraint(:checkout_request_id, name: "mpesa_transactions_checkout_request_id_index")  # ✅ Added constraint handling
 
   end
 end
