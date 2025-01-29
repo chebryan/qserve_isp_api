@@ -48,4 +48,38 @@ defmodule QserveIspApi.Radius do
       value: Integer.to_string(session_timeout)
     })
   end
+
+
+  def get_last_package(mac_address) do
+    query = """
+    SELECT package_name, hours, acctstoptime as last_active
+    FROM radacct
+    WHERE callingstationid = $1
+    ORDER BY acctstoptime DESC
+    LIMIT 1;
+    """
+    case QserveIspApi.Repo.query(query, [mac_address]) do
+      {:ok, %{rows: [[package_name, hours, last_active]]}} ->
+        %{package_name: package_name, hours: hours, last_active: last_active}
+      _ ->
+        %{package_name: "Unknown", hours: 0, last_active: "N/A"}
+    end
+  end
+
+  def get_user_session(mac_address) do
+    query = """
+    SELECT username, framedipaddress, acctstoptime as expiry_date
+    FROM radacct
+    WHERE callingstationid = $1
+    ORDER BY acctstoptime DESC
+    LIMIT 1;
+    """
+    case QserveIspApi.Repo.query(query, [mac_address]) do
+      {:ok, %{rows: [[username, framed_ip, expiry_date]]}} ->
+        %{username: username, mac_address: mac_address, ip_address: framed_ip, expiry_date: expiry_date}
+      _ ->
+        %{username: "Unknown", mac_address: mac_address, ip_address: "N/A", expiry_date: DateTime.utc_now()}
+    end
+  end
+
 end
