@@ -137,7 +137,7 @@ defmodule QserveIspApi.MpesaApi do
     {:error, "Kopokopo integration not implemented yet"}
   end
 
-  defp send_request(url, token, payload, payment_id) do
+  defp send_request(url, access_token, payload, payment_id) do
     token =
       case access_token do
         {:ok, t} -> t  # ✅ Extract token from tuple
