@@ -45,6 +45,19 @@ defmodule QserveIspApi.Packages do
     end
   # end
 
+
+  def get_user_data_usage(mac) do
+    query =
+      from r in "radacct",
+        where: r.callingstationid == ^mac,
+        select: %{
+          upload_mb: fragment("ROUND(COALESCE(SUM(?)/1024/1024, 0), 2)", r.acctinputoctets),
+          download_mb: fragment("ROUND(COALESCE(SUM(?)/1024/1024, 0), 2)", r.acctoutputoctets)
+        }
+
+    Repo.one(query) || %{upload_mb: 0, download_mb: 0}
+  end
+
   # def get_user_details(mac) do
   #   user = Repo.get_by("radacct", %{callingstationid: mac})
   #   if user do
