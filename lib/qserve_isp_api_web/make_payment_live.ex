@@ -62,24 +62,23 @@ defmodule QserveIspApiWeb.MakePaymentLive do
              amount: amount,
              phone_number: phone,
              status: "pending",
-             username: mac, # Fix username assignment
+             username: username,
              account_reference: mac,
              transaction_description: transaction_description
            })
            |> Repo.insert()
          end) do
 
-    # Step 2: Send STK push
+    # Now correctly access payment.id inside the `with` block
     case MpesaApi.send_stk_push(
            user.id,
-           payment.id,
+           payment.id,  # ✅ Fix: payment is now correctly accessible
            amount,
            phone,
            mac,
            transaction_description
          ) do
       {:ok, response} ->
-        # Save STK push response in mpesa_transactions table
         Repo.insert!(%MpesaTransaction{
           user_id: user.id,
           payment_id: payment.id,
@@ -89,17 +88,17 @@ defmodule QserveIspApiWeb.MakePaymentLive do
           raw_response: response
         })
 
-
-
         {:noreply, push_redirect(socket, to: ~p"/verify_payment/#{username}/#{mac}?payment_id=#{payment.id}")}
 
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Failed to send STK push: #{reason}")}
     end
   else
-    _ -> {:noreply, put_flash(socket, :error, "Payment initiation failed. Please try again.")}
+    {:error, reason} -> {:noreply, put_flash(socket, :error, "Payment initiation failed: #{reason}")}
+    _ -> {:noreply, put_flash(socket, :error, "Unexpected error occurred")}
   end
 end
+
 
 
 #   @impl true
