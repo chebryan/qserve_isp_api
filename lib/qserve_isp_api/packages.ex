@@ -47,21 +47,14 @@ defmodule QserveIspApi.Packages do
 
 
   def get_user_package(mac) do
-    query =
-      from p in "packages",
-        join: r in "radacct",
-        on: r.username == p.username,
-        where: r.callingstationid == ^mac,
-        limit: 1,
-        select: %{
-          id: p.id,
-          name: p.name,
-          duration: p.duration
-        }
-
-    Repo.one(query)
+    Repo.one(
+      from p in Package,
+      join: r in "radacct",
+      on: r.username == p.user_id,  # ✅ Use a valid column
+      where: r.callingstationid == ^mac,
+      select: p
+    )
   end
-
 
   def get_user_data_usage(mac) do
     query =
