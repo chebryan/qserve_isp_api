@@ -20,7 +20,7 @@ defmodule QserveIspApiWeb.VerifyPaymentLive do
     end
 
     # {:ok, socket}
-    {:ok, assign(socket, payment_id: payment_id, status: "Pending")}
+    {:ok, assign(socket, payment_id: payment_id, payment_status: "Pending")}
   end
 
   def handle_info(:check_payment, socket) do
@@ -30,10 +30,10 @@ defmodule QserveIspApiWeb.VerifyPaymentLive do
 
       "pending" ->
         Process.send_after(self(), :check_payment, 5000)
-        {:noreply, assign(socket, status: "Pending")}
+        {:noreply, assign(socket, payment_status: "Pending")}
 
       "failed" ->
-        {:noreply, assign(socket, status: "Failed")}
+        {:noreply, assign(socket, payment_status: "Failed")}
     end
   end
 
@@ -60,7 +60,7 @@ defmodule QserveIspApiWeb.VerifyPaymentLive do
     ~H"""
     <div>
       <h1>Verify Payment</h1>
-      <p>Status: <%= @status %></p>
+      <p>Status: <%= @payment_status %></p>
     </div>
     """
   end

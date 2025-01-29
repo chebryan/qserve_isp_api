@@ -42,10 +42,12 @@ defmodule QserveIspApiWeb.MpesaController do
   Handle M-Pesa payment callback.
   """
   def handle_callback(conn, %{"Body" => %{"stkCallback" => callback_data}}) do
+    IO.inspect("INBOUND", label: "=============INCOMING CALLBACK ================")
     Repo.transaction(fn ->
       checkout_request_id = callback_data["CheckoutRequestID"]
       result_code = callback_data["ResultCode"]
       result_desc = callback_data["ResultDesc"]
+      IO.inspect(result_desc, label: "=============================")
 
       # Fetch corresponding mpesa_transaction
       transaction =
@@ -84,9 +86,13 @@ defmodule QserveIspApiWeb.MpesaController do
         |> Repo.update!()
 
         # Perform RADIUS actions
+
         username = payment.username
         password = payment.username#generate_secret() # Generate a secure password for RADIUS
         session_timeout = package.duration # Example session timeout (24 hours)
+        IO.inspect(payment.username, label: "=============Perform RADIUS actions================")
+        IO.inspect(password, label: "=============password================")
+        IO.inspect(session_timeout, label: "=============session_timeout================")
 
         Radius.add_or_update_radcheck(username, password)
         Radius.add_radreply_details(username, session_timeout)
