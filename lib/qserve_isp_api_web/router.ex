@@ -24,12 +24,12 @@ defmodule QserveIspApiWeb.Router do
     #   live "/hotspot", HotspotLive
     # end
     # get "/", PageController, :home
-    live "/:username/:nas_ipaddress/:mac", StatusLive, :index
+    # live "/:username/:nas_ipaddress/:mac", StatusLive, :index
     live "/login/:username/:nas_ipaddress/:mac", LoginLive, :index
     live "/make_payment/:username/:nas_ipaddress/:mac", MakePaymentLive, :index
     live "/verify_payment/:username/:nas_ipaddress/:mac", VerifyPaymentLive, :index
-    live "/dashboard/:username/:nas_ipaddress/:mac", DashboardLive, :index
-    live "/expiry/:username/:nas_ipaddress/:mac", ExpiryLive, :index
+    # live "/dashboard/:username/:nas_ipaddress/:mac", DashboardLive, :index
+    # live "/expiry/:username/:nas_ipaddress/:mac", ExpiryLive, :index
   end
 
   # Other scopes may use custom stacks.
