@@ -34,9 +34,8 @@ defmodule QserveIspApi.MpesaTransactions.MpesaTransaction do
       :status,
       :raw_response
     ])
-    |> validate_required([
-      :checkout_request_id,
-      :status
-    ])
+    |> validate_required([:checkout_request_id, :phone_number, :amount, :package_id, :status])
+    |> unique_constraint(:checkout_request_id, name: "mpesa_transactions_checkout_request_id_index")  # ✅ Added constraint handling
+
   end
 end
