@@ -46,21 +46,30 @@ defmodule QserveIspApi.Packages do
   # end
 
 
-
-
   def get_user_package(mac) do
     Repo.one(
-      from p in Package,
-      join: pay in Payment,
-      on: pay.package_id == p.id,
-      join: r in "radacct",
-      on: r.callingstationid == pay.account_reference,  # Match MAC address
-      where: pay.account_reference == ^mac,
-      order_by: [desc: pay.inserted_at],  # Get the most recent payment
-      limit: 1,  # Only get the last one
-      select: p
-    )
+      from p in Payment,
+      join: pkg in Package, on: p.package_id == pkg.id,
+      where: p.account_reference == ^mac,
+      order_by: [desc: p.inserted_at],
+      limit: 1,
+      select: %{id: pkg.id, name: pkg.name, duration: pkg.duration, price: pkg.price}
+    ) || %{} # Return an empty map instead of nil
   end
+
+  # def get_user_package(mac) do
+  #   Repo.one(
+  #     from p in Package,
+  #     join: pay in Payment,
+  #     on: pay.package_id == p.id,
+  #     join: r in "radacct",
+  #     on: r.callingstationid == pay.account_reference,  # Match MAC address
+  #     where: pay.account_reference == ^mac,
+  #     order_by: [desc: pay.inserted_at],  # Get the most recent payment
+  #     limit: 1,  # Only get the last one
+  #     select: p
+  #   )
+  # end
 
 
   def get_user_data_usage(mac) do
