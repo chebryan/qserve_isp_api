@@ -107,7 +107,7 @@ defmodule QserveIspApi.MpesaApi do
       "AccountReference" => account_reference,
       "TransactionDesc" => transaction_description
     }
-    send_request(credentials.stk_push_url, token, payload, payment_id)
+    send_request(@mpesa_config[:stk_push_url], token, payload, payment_id)
   end
 
 
@@ -128,7 +128,7 @@ defmodule QserveIspApi.MpesaApi do
       "TransactionDesc" => transaction_description
     }
 
-    send_request(credentials.stk_push_url, token, payload, payment_id)
+    send_request(@mpesa_config[:stk_push_url], token, payload, payment_id)
   end
 
   defp handle_kopokopo_payment(credentials, _payment_id, amount, phone_number, account_reference, transaction_description) do
