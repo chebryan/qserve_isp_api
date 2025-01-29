@@ -138,10 +138,19 @@ defmodule QserveIspApi.MpesaApi do
   end
 
   defp send_request(url, token, payload, payment_id) do
+    token =
+      case access_token do
+        {:ok, t} -> t  # ✅ Extract token from tuple
+        t when is_binary(t) -> t  # ✅ Use directly if already a string
+        _ -> raise "Invalid token format"  # ❌ Catch unexpected cases
+      end
+
+    headers = [{"Authorization", "Bearer #{token}"} | headers]
+
     case HTTPoison.post(
            url,
            Jason.encode!(payload),
-           [{"Authorization", "Bearer #{token}"}, {"Content-Type", "application/json"}]
+           headers
          ) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         response = Jason.decode!(body)
