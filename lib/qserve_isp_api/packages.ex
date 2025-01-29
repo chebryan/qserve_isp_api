@@ -30,6 +30,8 @@ defmodule QserveIspApi.Packages do
       Repo.one(
         from r in "radacct",
           where: r.callingstationid == ^mac,
+          order_by: [desc: r.acctstarttime], # Get the latest session
+          limit: 1, # Ensure only one result is returned
           select: %{
             # name: r.username, # Use :name for consistency
             username: r.username,
@@ -39,6 +41,7 @@ defmodule QserveIspApi.Packages do
           }
       )
       || %{name: "Guest", username: "Guest", active: false, nas_ipaddress: nil, mac: mac}
+      # Repo.one(query) # Returns nil if no record is found, avoiding errors
     end
   # end
 
