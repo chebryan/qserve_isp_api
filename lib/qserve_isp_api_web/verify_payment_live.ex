@@ -2,7 +2,7 @@ defmodule QserveIspApiWeb.VerifyPaymentLive do
   use QserveIspApiWeb, :live_view
 
   alias QserveIspApi.MpesaApi
-
+  alias QserveIspApi.Payments
   def mount(%{"username" => username, "mac" => mac, "package_id" => package_id}, _session, socket) do
     # ✅ Assign initial state
     socket =
@@ -19,23 +19,40 @@ defmodule QserveIspApiWeb.VerifyPaymentLive do
   end
 
   def handle_info(:check_payment, socket) do
-    case MpesaApi.check_payment_status(socket.assigns.mac, socket.assigns.package_id) do
-      :success ->
-        # ✅ Redirect to DashboardLive upon successful payment
-        {:noreply,
-         push_redirect(socket,
-           to: ~p"/dashboard/#{socket.assigns.username}/#{socket.assigns.mac}"
-         )}
+    case Payments.check_payment_status(socket.assigns.mac, socket.assigns.package_id) do
+      {:ok, :success} ->
+        {:noreply, push_redirect(socket, to: ~p"/dashboard/#{socket.assigns.mac}")}
 
-      :pending ->
-        # Continue checking every 5 seconds
-        Process.send_after(self(), :check_payment, 5_000)
-        {:noreply, assign(socket, :payment_status, "Waiting for payment confirmation...")}
+      {:ok, :pending} ->
+        Process.send_after(self(), :check_payment, 5000)
+        {:noreply, assign(socket, payment_status: "Pending...")}
 
-      :failed ->
-        {:noreply, assign(socket, :payment_status, "Payment failed. Please try again.")}
+      {:error, :failed} ->
+        {:noreply, assign(socket, payment_status: "Payment failed. Please try again.")}
+
+      {:error, :not_found} ->
+        {:noreply, assign(socket, payment_status: "No payment found. Please make a payment.")}
     end
   end
+
+  # def handle_info(:check_payment, socket) do
+  #   case MpesaApi.check_payment_status(socket.assigns.mac, socket.assigns.package_id) do
+  #     :success ->
+  #       # ✅ Redirect to DashboardLive upon successful payment
+  #       {:noreply,
+  #        push_redirect(socket,
+  #          to: ~p"/dashboard/#{socket.assigns.username}/#{socket.assigns.mac}"
+  #        )}
+
+  #     :pending ->
+  #       # Continue checking every 5 seconds
+  #       Process.send_after(self(), :check_payment, 5_000)
+  #       {:noreply, assign(socket, :payment_status, "Waiting for payment confirmation...")}
+
+  #     :failed ->
+  #       {:noreply, assign(socket, :payment_status, "Payment failed. Please try again.")}
+  #   end
+  # end
 
   def render(assigns) do
     ~H"""

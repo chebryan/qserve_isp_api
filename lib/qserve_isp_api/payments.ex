@@ -4,7 +4,7 @@ defmodule QserveIspApi.Payments do
     alias QserveIspApi.Packages.Packages
     alias QserveIspApi.Radius.Radreply
     alias QserveIspApi.MpesaClient  # Placeholder for the M-Pesa STK push logic
-
+    import Ecto.Query, warn: false
     @doc """
     Creates a payment record for a package.
     """
@@ -192,5 +192,20 @@ defmodule QserveIspApi.Payments do
     #     order_by: [desc: p.inserted_at]
     #   )
     # end
+
+    def check_payment_status(mac, package_id) do
+      query = from(p in Payment,
+        where: p.account_reference == ^mac and p.package_id == ^package_id,
+        order_by: [desc: p.inserted_at],
+        limit: 1
+      )
+
+      case Repo.one(query) do
+        %Payment{status: "completed"} -> {:ok, :success}
+        %Payment{status: "pending"} -> {:ok, :pending}
+        %Payment{status: "failed"} -> {:error, :failed}
+        nil -> {:error, :not_found}
+      end
+    end
 
   end
