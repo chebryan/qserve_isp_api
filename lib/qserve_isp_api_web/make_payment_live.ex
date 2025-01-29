@@ -55,24 +55,29 @@ defmodule QserveIspApiWeb.MakePaymentLive do
        transaction_description <- "Payment for package #{package_id}",
        {:ok, payment} <-
          Repo.transaction(fn ->
-           %Payment{}
-           |> Payment.changeset(%{
-             user_id: user.id,
-             package_id: String.to_integer(package_id),
-             amount: amount,
-             phone_number: phone,
-             status: "pending",
-             username: username,
-             account_reference: mac,
-             transaction_description: transaction_description
-           })
-           |> Repo.insert()
+           changeset =
+             %Payment{}
+             |> Payment.changeset(%{
+               user_id: user.id,
+               package_id: String.to_integer(package_id),
+               amount: amount,
+               phone_number: phone,
+               status: "pending",
+               username: mac,
+               account_reference: mac,
+               transaction_description: transaction_description
+             })
+
+           case Repo.insert(changeset) do
+             {:ok, payment} -> payment  # ✅ Returning payment directly
+             {:error, reason} -> Repo.rollback(reason)  # Rollback if insert fails
+           end
          end) do
 
-    # Now correctly access payment.id inside the `with` block
+    # ✅ Correct way to access `payment.id` now
     case MpesaApi.send_stk_push(
            user.id,
-           payment.id,  # ✅ Fix: payment is now correctly accessible
+           payment.id,  # ✅ Fixed access to payment ID
            amount,
            phone,
            mac,
@@ -98,6 +103,7 @@ defmodule QserveIspApiWeb.MakePaymentLive do
     _ -> {:noreply, put_flash(socket, :error, "Unexpected error occurred")}
   end
 end
+
 
 
 
