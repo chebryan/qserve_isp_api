@@ -11,6 +11,20 @@ defmodule QserveIspApiWeb.MpesaController do
   alias QserveIspApi.Mpesa.Credential
 
 
+  def list_user_transactions(conn, _params) do
+    case AuthUtils.extract_user_id(conn) do
+      {:ok, user_id} ->
+        transactions =
+          Repo.all(from t in MpesaTransaction, where: t.user_id == ^user_id, order_by: [desc: t.inserted_at])
+
+        json(conn, %{status: "success", transactions: transactions})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{status: "error", message: "Unauthorized: #{reason}"})
+    end
+  end
 
   def get_token(conn, _params) do
     # Fetch credentials from database

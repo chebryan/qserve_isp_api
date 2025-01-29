@@ -14,6 +14,7 @@ defmodule QserveIspApi.MpesaTransactions.MpesaTransaction do
     field :result_desc, :string
     field :status, :string
     field :raw_response, :map
+    field :user_id, :integer
 
     timestamps()
   end
@@ -32,9 +33,10 @@ defmodule QserveIspApi.MpesaTransactions.MpesaTransaction do
       :result_code,
       :result_desc,
       :status,
-      :raw_response
+      :raw_response,
+      :user_id
     ])
-    |> validate_required([:checkout_request_id, :phone_number, :amount, :package_id, :status])
+    |> validate_required([:checkout_request_id, :phone_number, :amount, :package_id, :status, :user_id])
     |> unique_constraint(:checkout_request_id, name: "mpesa_transactions_checkout_request_id_index")  # ✅ Added constraint handling
 
   end
