@@ -94,14 +94,14 @@ defmodule QserveIspApiWeb.MakePaymentLive do
       end
 
     # Step 3: Save STK push response in mpesa_transactions table
-    Repo.insert!(%MpesaTransaction{
-          user_id:  user.id,
-          payment_id: payment.id,
-          checkout_request_id: stk_response["CheckoutRequestID"],
-          merchant_request_id: stk_response["MerchantRequestID"],
-          status: "initiated",
-          raw_response: stk_response
-        })
+    # Repo.insert!(%MpesaTransaction{
+    #       user_id:  user.id,
+    #       payment_id: payment.id,
+    #       checkout_request_id: stk_response["CheckoutRequestID"],
+    #       merchant_request_id: stk_response["MerchantRequestID"],
+    #       status: "initiated",
+    #       raw_response: stk_response
+    #     })
       end)
 
   {:noreply,
