@@ -172,18 +172,7 @@ defmodule QserveIspApi.MpesaApi do
     })
   end
 
-  def insert_mpesa_transaction(attrs) do
-    case Repo.get_by(QserveIspApi.Mpesa.Transaction, checkout_request_id: attrs.checkout_request_id) do
-      nil ->
-        # ✅ Only insert if the checkout_request_id is new
-        %QserveIspApi.Mpesa.Transaction{}
-        |> QserveIspApi.Mpesa.Transaction.changeset(attrs)
-        |> Repo.insert()
 
-      existing_transaction ->
-        {:error, "Duplicate transaction detected with checkout_request_id: #{existing_transaction.checkout_request_id}"}
-    end
-  end
 
   def check_payment_status(package) do
     payment_status = Repo.get_by("payment", %{package_id: package.id})
