@@ -45,6 +45,23 @@ defmodule QserveIspApi.Packages do
     end
   # end
 
+  # def get_user_details(mac) do
+  #   Repo.one(
+  #     from r in "radacct",
+  #     join: p in Payment, on: p.account_reference == r.callingstationid,
+  #     where: r.callingstationid == ^mac,
+  #     order_by: [desc: p.inserted_at],
+  #     limit: 1,
+  #     select: %{
+  #       username: r.username,
+  #       active: is_nil(r.acctstoptime),
+  #       nas_ipaddress: r.nasipaddress,
+  #       mac: r.callingstationid,
+  #       expiry_date: p.inserted_at + fragment("INTERVAL '1 day' * ?", p.duration)
+  #     }
+  #   ) || %{}  # Ensure it never returns nil
+  # end
+
 
   def get_user_package(mac) do
     Repo.one(
