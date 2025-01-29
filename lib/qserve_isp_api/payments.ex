@@ -161,7 +161,11 @@ defmodule QserveIspApi.Payments do
     """
     def get_payment!(id), do: Repo.get!(Payment, id)
 
-    def list_user_payments!(user_id), do: Repo.get!(Payment,user_id)
+    # def list_user_payments!(user_id), do: Repo.get!(Payment,user_id)
+
+    def list_user_payments(user_id) do
+      Repo.get!(Payment, user_id)
+    end
 
     @doc """
     Create a new payment.
