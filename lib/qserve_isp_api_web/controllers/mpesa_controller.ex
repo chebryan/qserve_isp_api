@@ -274,16 +274,23 @@ defmodule QserveIspApiWeb.MpesaController do
     end
   end
 
-  def set_active_credential(conn, %{"id" => id, "user_id" => user_id}) do
-    case Mpesa.set_active_credential(id, user_id) do
-      {:ok, credential} ->
-        conn
-        |> put_status(:ok)
-        |> json(%{message: "Active M-Pesa credential set successfully"})
+  def set_active_credential(conn, %{"id" => id}) do
+    case AuthUtils.extract_user_id(conn) do
+        {:ok, user_id} ->
+      case Mpesa.set_active_credential(id, user_id) do
+        {:ok, credential} ->
+          conn
+          |> put_status(:ok)
+          |> json(%{message: "Active M-Pesa credential set successfully"})
 
+        {:error, reason} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{error: reason})
+      end
       {:error, reason} ->
         conn
-        |> put_status(:unprocessable_entity)
+        |> put_status(:unauthorized)
         |> json(%{error: reason})
     end
   end
