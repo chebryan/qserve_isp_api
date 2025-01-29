@@ -1,6 +1,7 @@
 defmodule QserveIspApiWeb.PaymentController do
   use QserveIspApiWeb, :controller
   alias QserveIspApi.Payments
+  alias QserveIspApiWeb.Utils.AuthUtils
 
   @doc """
   List all payments for a specific ISP user.
