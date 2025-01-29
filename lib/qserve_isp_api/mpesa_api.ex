@@ -237,52 +237,165 @@ defmodule QserveIspApi.MpesaApi do
   #   end
   # end
 
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
-  end
+
+    ## ========== START GenServer ==========
+      def start_link(_opts) do
+        GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+      end
+
+      def init(_) do
+        schedule_shortcode_check()
+        {:ok, %{token: nil, expiry: 0, credentials: nil}}
+      end
+
+      ## ========== GET OR REFRESH TOKEN ==========
+      @doc """
+      Gets an access token using the provided credentials. If the credentials are different from the cached ones,
+      a new token is fetched.
+      """
+      def get_or_refresh_access_token(%{
+            consumer_key: consumer_key,
+            consumer_secret: consumer_secret,
+            short_code: short_code
+          } = credentials) do
+        GenServer.call(__MODULE__, {:get_token, credentials})
+      end
+
+      def handle_call({:get_token, new_credentials}, _from, state) do
+        current_time = System.system_time(:second)
+
+        if state.token && state.expiry > current_time && state.credentials == new_credentials do
+          {:reply, {:ok, state.token}, state}
+        else
+          case fetch_and_store_token(new_credentials) do
+            {:ok, new_token, expiry} ->
+              {:reply, {:ok, new_token}, %{state | token: new_token, expiry: expiry, credentials: new_credentials}}
+
+            {:error, reason} ->
+              {:reply, {:error, reason}, state}
+          end
+        end
+      end
+
+      ## ========== FETCH NEW TOKEN ==========
+      defp fetch_and_store_token(%{
+            consumer_key: consumer_key,
+            consumer_secret: consumer_secret,
+            short_code: short_code
+          }) do
+        credentials_encoded = Base.encode64("#{consumer_key}:#{consumer_secret}")
+
+        headers = [
+          {"Authorization", "Basic #{credentials_encoded}"},
+          {"Content-Type", "application/json"}
+        ]
+
+        case HTTPoison.get(@mpesa_config[:token_url], headers) do
+          {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+            case Jason.decode(body) do
+              {:ok, %{"access_token" => token, "expires_in" => expiry_seconds}} ->
+                expiry = System.system_time(:second) + expiry_seconds
+
+                # Store new token and expiry
+                GenServer.cast(__MODULE__, {:set_token, token, expiry, short_code})
+                {:ok, token, expiry}
+
+              {:error, _reason} ->
+                {:error, "Failed to decode token response"}
+            end
+
+          {:error, reason} ->
+            {:error, "HTTP request error: #{inspect(reason)}"}
+        end
+      end
+
+      def handle_cast({:set_token, token, expiry, short_code}, state) do
+        {:noreply, %{state | token: token, expiry: expiry, credentials: %{short_code: short_code}}}
+      end
+
+      ## ========== MONITOR SHORTCODE CHANGES ==========
+      defp schedule_shortcode_check() do
+        Process.send_after(self(), :check_shortcode, 30_000)  # Check every 30 seconds
+      end
+
+      def handle_info(:check_shortcode, state) do
+        case Repo.get_by(Credential, status: true) do
+          %Credential{short_code: new_shortcode, consumer_key: new_key, consumer_secret: new_secret} = credentials ->
+            prev_shortcode = state.credentials && state.credentials.short_code
+
+            if new_shortcode != prev_shortcode do
+              IO.puts("🔄 Shortcode changed! Fetching new token...")
+
+              new_credentials = %{
+                consumer_key: new_key,
+                consumer_secret: new_secret,
+                short_code: new_shortcode
+              }
+
+              case fetch_and_store_token(new_credentials) do
+                {:ok, new_token, expiry} ->
+                  {:noreply, %{state | token: new_token, expiry: expiry, credentials: new_credentials}}
+
+                {:error, reason} ->
+                  IO.puts("❌ Failed to fetch new token: #{inspect(reason)}")
+                  {:noreply, state}
+              end
+            else
+              {:noreply, state}
+            end
+
+          _ ->
+            {:noreply, state}
+        end
+
+        schedule_shortcode_check()
+        {:noreply, state}
+      end
+
+
     @doc """
   Gets an access token using the given credentials. If an existing valid token is available, it is reused;
   otherwise, a new token is fetched from the API.
   """
-  def get_or_refresh_access_token(%{
-      consumer_key: consumer_key,
-      consumer_secret: consumer_secret
-    } = credentials) do
-    case GenServer.call(__MODULE__, :get_token) do
-      {:ok, token} -> {:ok, token}
-      _ -> fetch_and_store_token(credentials)
-    end
-  end
+  # def get_or_refresh_access_token(%{
+  #     consumer_key: consumer_key,
+  #     consumer_secret: consumer_secret
+  #   } = credentials) do
+  #   case GenServer.call(__MODULE__, :get_token) do
+  #     {:ok, token} -> {:ok, token}
+  #     _ -> fetch_and_store_token(credentials)
+  #   end
+  # end
 
-  defp fetch_and_store_token(%{
-        consumer_key: consumer_key,
-        consumer_secret: consumer_secret
-      }) do
-    credentials = Base.encode64("#{consumer_key}:#{consumer_secret}")
+  # defp fetch_and_store_token(%{
+  #       consumer_key: consumer_key,
+  #       consumer_secret: consumer_secret
+  #     }) do
+  #   credentials = Base.encode64("#{consumer_key}:#{consumer_secret}")
 
-    headers = [
-    {"Authorization", "Basic #{credentials}"},
-    {"Content-Type", "application/json"}
-    ]
+  #   headers = [
+  #   {"Authorization", "Basic #{credentials}"},
+  #   {"Content-Type", "application/json"}
+  #   ]
 
-    case HTTPoison.get(@mpesa_config[:token_url], headers) do
-    {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-      case Jason.decode(body) do
-        {:ok, %{"access_token" => token, "expires_in" => expires_in}} ->
-          expiry_time = System.system_time(:second) + String.to_integer("#{expires_in}")
+  #   case HTTPoison.get(@mpesa_config[:token_url], headers) do
+  #   {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+  #     case Jason.decode(body) do
+  #       {:ok, %{"access_token" => token, "expires_in" => expires_in}} ->
+  #         expiry_time = System.system_time(:second) + String.to_integer("#{expires_in}")
 
-          # Store token and expiry time
-          GenServer.cast(__MODULE__, {:set_token, token, expiry_time})
-          {:ok, token}
+  #         # Store token and expiry time
+  #         GenServer.cast(__MODULE__, {:set_token, token, expiry_time})
+  #         {:ok, token}
 
-        {:error, _reason} ->
-          {:error, :invalid_response}
-      end
+  #       {:error, _reason} ->
+  #         {:error, :invalid_response}
+  #     end
 
-    {:error, reason} ->
-      {:error, reason}
-    end
-    end
+  #   {:error, reason} ->
+  #     {:error, reason}
+  #   end
+  #   end
 
   # defp fetch_and_store_token(%{
   #       consumer_key: consumer_key,
@@ -315,18 +428,18 @@ defmodule QserveIspApi.MpesaApi do
 
   ## GenServer Callbacks
 
-  def init(_state), do: {:ok, %{token: nil, expiry: 0}}
+  # def init(_state), do: {:ok, %{token: nil, expiry: 0}}
 
-  def handle_call(:get_token, _from, %{token: token, expiry: expiry} = state) do
-  if token && System.system_time(:second) < expiry do
-  {:reply, {:ok, token}, state}
-  else
-  {:reply, :expired, %{state | token: nil, expiry: 0}}
-  end
-  end
+  # def handle_call(:get_token, _from, %{token: token, expiry: expiry} = state) do
+  # if token && System.system_time(:second) < expiry do
+  # {:reply, {:ok, token}, state}
+  # else
+  # {:reply, :expired, %{state | token: nil, expiry: 0}}
+  # end
+  # end
 
-  def handle_cast({:set_token, token, expiry}, _state) do
-  {:noreply, %{token: token, expiry: expiry}}
-  end
+  # def handle_cast({:set_token, token, expiry}, _state) do
+  # {:noreply, %{token: token, expiry: expiry}}
+  # end
 
 end
