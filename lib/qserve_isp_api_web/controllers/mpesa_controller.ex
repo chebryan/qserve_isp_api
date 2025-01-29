@@ -9,14 +9,13 @@ defmodule QserveIspApiWeb.MpesaController do
   alias QserveIspApi.Packages.Package
   alias QserveIspApiWeb.Utils.AuthUtils
   alias QserveIspApi.Mpesa.Credential
+  import Ecto.Query
 
 
   def list_user_transactions(conn, _params) do
     case AuthUtils.extract_user_id(conn) do
       {:ok, user_id} ->
-        transactions =
-          Repo.all(from t in MpesaTransaction, where: t.user_id == ^user_id, order_by: [desc: t.inserted_at])
-
+        transactions = Repo.all(from m in MpesaTransaction, where: m.user_id == ^user_id, order_by: [desc: m.inserted_at])
         json(conn, %{status: "success", transactions: transactions})
 
       {:error, reason} ->
