@@ -294,8 +294,8 @@ defmodule QserveIspApi.MpesaApi do
           {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
             case Jason.decode(body) do
               {:ok, %{"access_token" => token, "expires_in" => expiry_seconds}} ->
-                expiry =  System.system_time(:second) + String.to_integer("#{expires_in}")
-
+                # expiry = System.system_time(:second) + expiry_seconds
+                expiry = System.system_time(:second) + String.to_integer("#{expiry_seconds}")
                 # Store new token and expiry
                 GenServer.cast(__MODULE__, {:set_token, token, expiry, short_code})
                 {:ok, token, expiry}
