@@ -17,7 +17,8 @@ defmodule QserveIspApi.Application do
       # Start a worker by calling: QserveIspApi.Worker.start_link(arg)
       # {QserveIspApi.Worker, arg},
       # Start to serve requests, typically the last entry
-      QserveIspApiWeb.Endpoint
+      QserveIspApiWeb.Endpoint,
+      QserveIspApi.MpesaApi
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
