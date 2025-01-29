@@ -5,10 +5,25 @@ defmodule QserveIspApiWeb.MpesaController do
   alias QserveIspApi.Payments.Payment
   alias QserveIspApi.MpesaTransactions.MpesaTransaction
   alias QserveIspApi.Mpesa
+  alias QserveIspApi.MpesaApi
   alias QserveIspApi.Packages.Package
   alias QserveIspApiWeb.Utils.AuthUtils
   alias QserveIspApi.Mpesa.Credential
 
+
+
+  def get_token(conn, _params) do
+    # Fetch credentials from database
+    credentials = Repo.get_by(Credential, status: true) # Fetch active credentials
+
+    case MpesaApi.get_or_refresh_access_token(credentials) do
+      {:ok, token} ->
+        json(conn, %{access_token: token})
+
+      {:error, reason} ->
+        json(conn, %{error: "Failed to fetch token", reason: inspect(reason)})
+    end
+  end
 
   @doc """
   Handle M-Pesa payment callback.
