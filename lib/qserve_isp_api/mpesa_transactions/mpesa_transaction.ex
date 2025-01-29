@@ -3,6 +3,7 @@ defmodule QserveIspApi.MpesaTransactions.MpesaTransaction do
   import Ecto.Changeset
 
   schema "mpesa_transactions" do
+    field :user_id, :integer
     field :payment_id, :integer
     field :checkout_request_id, :string
     field :merchant_request_id, :string
@@ -14,7 +15,6 @@ defmodule QserveIspApi.MpesaTransactions.MpesaTransaction do
     field :result_desc, :string
     field :status, :string
     field :raw_response, :map
-    field :user_id, :integer
 
     timestamps()
   end
@@ -37,7 +37,8 @@ defmodule QserveIspApi.MpesaTransactions.MpesaTransaction do
     #   :user_id
     # ])
     |> cast(attrs, [:checkout_request_id, :phone_number, :amount, :package_id, :status, :user_id])
-    |> validate_required([:checkout_request_id, :phone_number, :amount, :package_id, :status, :user_id])
+    # |> validate_required([:checkout_request_id, :phone_number, :amount, :package_id, :status, :user_id])
+    |> validate_required([:checkout_request_id])
     |> unique_constraint(:checkout_request_id, name: "mpesa_transactions_checkout_request_id_index")  # ✅ Added constraint handling
 
   end
