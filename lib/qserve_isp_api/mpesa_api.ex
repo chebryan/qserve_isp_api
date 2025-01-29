@@ -107,11 +107,11 @@ defmodule QserveIspApi.MpesaApi do
       "AccountReference" => account_reference,
       "TransactionDesc" => transaction_description
     }
-    send_request(@mpesa_config[:stk_push_url], token, payload, payment_id,user_id)
+    send_request(@mpesa_config[:stk_push_url], token, payload, payment_id, user_id)
   end
 
 
-  defp handle_tillno_stk_push(user_id,credentials, payment_id, amount, phone_number, account_reference, transaction_description) do
+  defp handle_tillno_stk_push(user_id, credentials, payment_id, amount, phone_number, account_reference, transaction_description) do
     token = get_or_refresh_access_token(credentials)
     phone = normalize_phone_number(phone_number)
     payload = %{
@@ -128,7 +128,7 @@ defmodule QserveIspApi.MpesaApi do
       "TransactionDesc" => transaction_description
     }
 
-    send_request(@mpesa_config[:stk_push_url], token, payload, payment_id,user_id)
+    send_request(@mpesa_config[:stk_push_url], token, payload, payment_id, user_id)
   end
 
   defp handle_kopokopo_payment(user_id,credentials, _payment_id, amount, phone_number, account_reference, transaction_description) do
@@ -137,7 +137,7 @@ defmodule QserveIspApi.MpesaApi do
     {:error, "Kopokopo integration not implemented yet"}
   end
 
-  defp send_request(url, access_token, payload, payment_id,user_id) do
+  defp send_request(url, access_token, payload, payment_id, user_id) do
     token =
       case access_token do
         {:ok, t} -> t  # ✅ Extract token from tuple
@@ -145,7 +145,6 @@ defmodule QserveIspApi.MpesaApi do
         _ -> raise "Invalid token format"  # ❌ Catch unexpected cases
       end
 
-    # headers = [{"Authorization", "Bearer #{token}"} | headers]
 
     case HTTPoison.post(
            url,
@@ -154,7 +153,7 @@ defmodule QserveIspApi.MpesaApi do
          ) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         response = Jason.decode!(body)
-        save_transaction(payment_id, response,user_id)
+        save_transaction(payment_id, response, user_id)
         {:ok, response}
 
       {:error, %HTTPoison.Error{reason: reason}} ->
@@ -162,7 +161,7 @@ defmodule QserveIspApi.MpesaApi do
     end
   end
 
-  defp save_transaction(payment_id, response,user_id) do
+  defp save_transaction(payment_id, response, user_id) do
     Repo.insert!(%MpesaTransaction{
       user_id: user_id,
       payment_id: payment_id,
