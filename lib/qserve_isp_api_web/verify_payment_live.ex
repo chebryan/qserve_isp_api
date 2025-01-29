@@ -28,7 +28,7 @@ defmodule QserveIspApiWeb.VerifyPaymentLive do
       # "completed" ->
       #   {:noreply, push_redirect(socket, to: ~p"/dashboard/#{socket.assigns.payment_id}")}
       "completed" ->
-        {:noreply, push_redirect(socket, to: "http://login.hs/login"  )}
+        {:noreply, redirect(socket, external: "http://login.hs/login")}
 
       "pending" ->
         Process.send_after(self(), :check_payment, 5000)
