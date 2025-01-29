@@ -45,7 +45,7 @@ defmodule QserveIspApiWeb.DashboardLive do
             <p><strong>Username (MAC):</strong> <%= @user_details.mac %></p>
             <p><strong>Status:</strong> <%= if @user_details.active, do: "Active", else: "Expired" %></p>
             <p><strong>Device Name:</strong> Unknown </p>
-            <p>Package: <%= @package && @package.name || "No Active Package" %></p>
+
           </div>
           <div>
             <p><strong>Upload Data:</strong> <%= @data_usage.upload_mb %> MB</p>
