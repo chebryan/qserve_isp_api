@@ -194,16 +194,17 @@ defmodule QserveIspApi.Payments do
     # end
 
     def check_payment_status(mac, package_id) do
-      query = from(p in Payment,
-        where: p.account_reference == ^mac and p.package_id == ^package_id,
-        order_by: [desc: p.inserted_at],
-        limit: 1
-      )
+      query =
+        from p in Payment,  # Use the correct schema reference
+          where: p.account_reference == ^mac and p.package_id == ^package_id,
+          select: %{status: p.status},  # Explicitly select the field
+          order_by: [desc: p.inserted_at],
+          limit: 1
 
       case Repo.one(query) do
-        %Payment{status: "completed"} -> {:ok, :success}
-        %Payment{status: "pending"} -> {:ok, :pending}
-        %Payment{status: "failed"} -> {:error, :failed}
+        %{status: "completed"} -> {:ok, :success}
+        %{status: "pending"} -> {:ok, :pending}
+        %{status: "failed"} -> {:error, :failed}
         nil -> {:error, :not_found}
       end
     end
