@@ -46,15 +46,22 @@ defmodule QserveIspApi.Packages do
   # end
 
 
+
+
   def get_user_package(mac) do
     Repo.one(
       from p in Package,
+      join: pay in Payment,
+      on: pay.package_id == p.id,
       join: r in "radacct",
-      on: r.username == p.user_id,  # ✅ Use a valid column
-      where: r.callingstationid == ^mac,
+      on: r.callingstationid == pay.account_reference,  # Match MAC address
+      where: pay.account_reference == ^mac,
+      order_by: [desc: pay.inserted_at],  # Get the most recent payment
+      limit: 1,  # Only get the last one
       select: p
     )
   end
+
 
   def get_user_data_usage(mac) do
     query =
