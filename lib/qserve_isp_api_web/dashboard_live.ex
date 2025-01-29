@@ -18,7 +18,7 @@ defmodule QserveIspApiWeb.DashboardLive do
     user_details = Packages.get_user_details(mac)
     data_usage = Packages.get_user_data_usage(mac)
     package = Packages.get_user_package(mac)
-    wallet_balance = Wallet.get_balance(user_details.username)
+    wallet_balance =  0 #Wallet.get_balance(user_details.username)
 
     {:noreply,
      assign(socket,
