@@ -26,41 +26,42 @@ defmodule QserveIspApi.Packages do
     #   || %{name: "Guest", active: false, mac: mac}
     # end
 
-    def get_user_details(mac) do
-      Repo.one(
-        from r in "radacct",
-          where: r.callingstationid == ^mac,
-          order_by: [desc: r.acctstarttime], # Get the latest session
-          limit: 1, # Ensure only one result is returned
-          select: %{
-            # name: r.username, # Use :name for consistency
-            username: r.username,
-            active: is_nil(r.acctstoptime),
-            nas_ipaddress: r.nasipaddress,
-            mac: r.callingstationid
-          }
-      )
-      || %{name: "Guest", username: "Guest", active: false, nas_ipaddress: nil, mac: mac}
-      # Repo.one(query) # Returns nil if no record is found, avoiding errors
-    end
-  # end
+  #   def get_user_details(mac) do
+  #     Repo.one(
+  #       from r in "radacct",
+  #         where: r.callingstationid == ^mac,
+  #         order_by: [desc: r.acctstarttime], # Get the latest session
+  #         limit: 1, # Ensure only one result is returned
+  #         select: %{
+  #           # name: r.username, # Use :name for consistency
+  #           username: r.username,
+  #           active: is_nil(r.acctstoptime),
+  #           nas_ipaddress: r.nasipaddress,
+  #           mac: r.callingstationid
+  #         }
+  #     )
+  #     || %{name: "Guest", username: "Guest", active: false, nas_ipaddress: nil, mac: mac}
+  #     # Repo.one(query) # Returns nil if no record is found, avoiding errors
+  #   end
+  # # end
 
-  # def get_user_details(mac) do
-  #   Repo.one(
-  #     from r in "radacct",
-  #     join: p in Payment, on: p.account_reference == r.callingstationid,
-  #     where: r.callingstationid == ^mac,
-  #     order_by: [desc: p.inserted_at],
-  #     limit: 1,
-  #     select: %{
-  #       username: r.username,
-  #       active: is_nil(r.acctstoptime),
-  #       nas_ipaddress: r.nasipaddress,
-  #       mac: r.callingstationid,
-  #       expiry_date: p.inserted_at + fragment("INTERVAL '1 day' * ?", p.duration)
-  #     }
-  #   ) || %{}  # Ensure it never returns nil
-  # end
+  def get_user_details(mac) do
+    Repo.one(
+      from r in "radacct",
+      join: p in Payment, on: p.account_reference == r.callingstationid,
+      where: r.callingstationid == ^mac,
+      order_by: [desc: p.inserted_at],
+      limit: 1,
+      select: %{
+        username: r.username,
+        active: is_nil(r.acctstoptime),
+        nas_ipaddress: r.nasipaddress,
+        mac: r.callingstationid,
+        expiry_date: r.acctstoptime
+        #expiry_date: p.inserted_at + fragment("INTERVAL '1 day' * ?", p.duration)
+      }
+    ) || %{}  # Ensure it never returns nil
+  end
 
 
   def get_user_package(mac) do

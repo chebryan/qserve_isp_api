@@ -50,7 +50,7 @@ defmodule QserveIspApiWeb.DashboardLive do
           <div>
             <p><strong>Upload Data:</strong> <%= @data_usage.upload_mb %> MB</p>
             <p><strong>Download Data:</strong> <%= @data_usage.download_mb %> MB</p>
-            <p><strong>Expiry Date:</strong> <%= @user_details.acctstoptime || "N/A" %></p>
+            <p><strong>Expiry Date:</strong> <%= @user_details.expiry_date || "N/A" %></p>
             <p><strong>Wallet Balance:</strong> <%= @wallet_balance %> KES</p>
           </div>
         </div>
