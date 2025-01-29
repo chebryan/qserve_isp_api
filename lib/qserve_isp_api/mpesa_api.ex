@@ -93,16 +93,16 @@ defmodule QserveIspApi.MpesaApi do
 
   defp handle_paybill_stk_push(credentials, payment_id, amount, phone_number, account_reference, transaction_description) do
     token = get_or_refresh_access_token(credentials)
-
+    phone = normalize_phone_number(phone_number)
     payload = %{
       "BusinessShortCode" => credentials.short_code,
       "Password" => generate_password(credentials.short_code, credentials.passkey),
       "Timestamp" => generate_timestamp(),
       "TransactionType" => "CustomerPayBillOnline",
       "Amount" => amount,
-      "PartyA" => phone_number,
+      "PartyA" => phone,
       "PartyB" => credentials.short_code,
-      "PhoneNumber" => phone_number,
+      "PhoneNumber" => phone,
       "CallBackURL" => "https://api.qserve-isp.net/api/pay/callback",
       "AccountReference" => account_reference,
       "TransactionDesc" => transaction_description
@@ -113,16 +113,16 @@ defmodule QserveIspApi.MpesaApi do
 
   defp handle_tillno_stk_push(credentials, payment_id, amount, phone_number, account_reference, transaction_description) do
     token = get_or_refresh_access_token(credentials)
-
+    phone = normalize_phone_number(phone_number)
     payload = %{
       "BusinessShortCode" => credentials.till_no,
       "Password" => generate_password(credentials.till_no, credentials.passkey),
       "Timestamp" => generate_timestamp(),
       "TransactionType" => "CustomerBuyGoodsOnline",
       "Amount" => amount,
-      "PartyA" => phone_number,
+      "PartyA" => phone,
       "PartyB" => credentials.short_code,
-      "PhoneNumber" => phone_number,
+      "PhoneNumber" => phone,
       "CallBackURL" => "https://api.qserve-isp.net/api/pay/callback",
       "AccountReference" => account_reference,
       "TransactionDesc" => transaction_description
