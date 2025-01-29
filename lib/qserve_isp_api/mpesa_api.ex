@@ -5,7 +5,7 @@ defmodule QserveIspApi.MpesaApi do
   alias QserveIspApi.Mpesa
   require Logger
   use Timex
-
+  use GenServer
 
   @mpesa_config Application.compile_env(:qserve_isp_api, :mpesa)
 
@@ -180,9 +180,9 @@ defmodule QserveIspApi.MpesaApi do
     Timex.format!(Timex.now(), "{YYYY}{0M}{0D}{h24}{0m}{0s}")
   end
 
-  defp get_or_refresh_access_token(credentials) do
-    # Implement token generation/refresh logic using `credentials.consumer_key` and `credentials.consumer_secret`
-  end
+  # defp get_or_refresh_access_token(credentials) do
+  #   # Implement token generation/refresh logic using `credentials.consumer_key` and `credentials.consumer_secret`
+  # end
 
   # def send_stk_push(user_id, payment_id, amount, phone_number, account_reference, transaction_description) do
   #   normalized_phone_number = normalize_phone_number(phone_number)
@@ -224,4 +224,67 @@ defmodule QserveIspApi.MpesaApi do
   #     end
   #   end
   # end
+
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+  end
+    @doc """
+  Gets an access token using the given credentials. If an existing valid token is available, it is reused;
+  otherwise, a new token is fetched from the API.
+  """
+  def get_or_refresh_access_token(%{
+      consumer_key: consumer_key,
+      consumer_secret: consumer_secret
+    } = credentials) do
+    case GenServer.call(__MODULE__, :get_token) do
+      {:ok, token} -> {:ok, token}
+      _ -> fetch_and_store_token(credentials)
+    end
+  end
+
+  defp fetch_and_store_token(%{
+        consumer_key: consumer_key,
+        consumer_secret: consumer_secret
+      }) do
+    credentials = Base.encode64("#{consumer_key}:#{consumer_secret}")
+
+    headers = [
+    {"Authorization", "Basic #{credentials}"},
+    {"Content-Type", "application/json"}
+    ]
+
+    case HTTPoison.get(@mpesa_config[:token_url], headers) do
+    {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+      case Jason.decode(body) do
+        {:ok, %{"access_token" => token, "expires_in" => expires_in}} ->
+          # Store token and expiry time
+          expiry_time = System.system_time(:second) + expires_in
+          GenServer.cast(__MODULE__, {:set_token, token, expiry_time})
+          {:ok, token}
+
+        {:error, _reason} ->
+          {:error, :invalid_response}
+      end
+
+    {:error, reason} ->
+      {:error, reason}
+    end
+    end
+
+  ## GenServer Callbacks
+
+  def init(_state), do: {:ok, %{token: nil, expiry: 0}}
+
+  def handle_call(:get_token, _from, %{token: token, expiry: expiry} = state) do
+  if token && System.system_time(:second) < expiry do
+  {:reply, {:ok, token}, state}
+  else
+  {:reply, :expired, %{state | token: nil, expiry: 0}}
+  end
+  end
+
+  def handle_cast({:set_token, token, expiry}, _state) do
+  {:noreply, %{token: token, expiry: expiry}}
+  end
+
 end
