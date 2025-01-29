@@ -104,8 +104,14 @@ defmodule QserveIspApiWeb.MakePaymentLive do
     #     })
       end)
 
+  # {:noreply,
+  #  assign(socket, :payment_status, "STK push sent successfully! Please wait for confirmation.")
+  # }
   {:noreply,
-   assign(socket, :payment_status, "STK push sent successfully! Please wait for confirmation.")}
+  push_redirect(socket,
+    to: ~p"/verify_payment/#{username}/#{mac}?package_id=#{package_id}"
+  )}
+
 end
 
   def render(assigns) do
