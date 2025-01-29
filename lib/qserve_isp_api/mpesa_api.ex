@@ -153,7 +153,7 @@ defmodule QserveIspApi.MpesaApi do
          ) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         response = Jason.decode!(body)
-        save_transaction(payment_id, response, user_id)
+        # save_transaction(payment_id, response, user_id)
         {:ok, response}
 
       {:error, %HTTPoison.Error{reason: reason}} ->

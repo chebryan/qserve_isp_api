@@ -43,76 +43,138 @@ defmodule QserveIspApiWeb.MakePaymentLive do
   #   )}
   # end
 
+
   @impl true
   def handle_event(
       "process_payment",
       %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac, "username" => username},
       socket
     ) do
-  user = Repo.get_by(User, username: username)
-  # amount = Decimal.new(price)
-   amount =
-      case Decimal.new(price) do
-        %Decimal{} = decimal -> Decimal.to_integer(decimal)
-        _ -> 0 # Handle invalid price inputs gracefully
-      end
-  transaction_description = "Payment for package #{package_id}"
-  Repo.transaction(fn ->
-    # Step 1: Save payment in the payments table
-    {:ok, payment} =
-      %Payment{}
-      |> Payment.changeset(%{
-        user_id: user.id,
-        package_id: String.to_integer(package_id),
-        amount: amount,
-        phone_number: phone,
-        status: "pending",
-        username: mac,
-        account_reference: mac,
-        transaction_description: transaction_description
-
-      })
-      |> Repo.insert()
+  with user <- Repo.get_by(User, username: username),
+       amount <- Decimal.new(price) |> Decimal.to_integer(),
+       transaction_description <- "Payment for package #{package_id}",
+       {:ok, payment} <-
+         Repo.transaction(fn ->
+           %Payment{}
+           |> Payment.changeset(%{
+             user_id: user.id,
+             package_id: String.to_integer(package_id),
+             amount: amount,
+             phone_number: phone,
+             status: "pending",
+             username: mac, # Fix username assignment
+             account_reference: mac,
+             transaction_description: transaction_description
+           })
+           |> Repo.insert()
+         end) do
 
     # Step 2: Send STK push
+    case MpesaApi.send_stk_push(
+           user.id,
+           payment.id,
+           amount,
+           phone,
+           mac,
+           transaction_description
+         ) do
+      {:ok, response} ->
+        # Save STK push response in mpesa_transactions table
+        Repo.insert!(%MpesaTransaction{
+          user_id: user.id,
+          payment_id: payment.id,
+          checkout_request_id: response["CheckoutRequestID"],
+          merchant_request_id: response["MerchantRequestID"],
+          status: "initiated",
+          raw_response: response
+        })
 
 
-    stk_response =
-      case MpesaApi.send_stk_push(
-             user.id,
-             payment.id,
-             amount,
-             phone,
-             mac,
-             transaction_description
-           ) do
-        {:ok, response} ->
-          response
 
-        {:error, reason} ->
-          raise "Failed to send STK push: #{reason}"
-      end
+        {:noreply, push_redirect(socket, to: ~p"/verify_payment/#{username}/#{mac}?payment_id=#{payment.id}")}
 
-    # Step 3: Save STK push response in mpesa_transactions table
-    # Repo.insert!(%MpesaTransaction{
-    #       user_id:  user.id,
-    #       payment_id: payment.id,
-    #       checkout_request_id: stk_response["CheckoutRequestID"],
-    #       merchant_request_id: stk_response["MerchantRequestID"],
-    #       status: "initiated",
-    #       raw_response: stk_response
-    #     })
-      end)
-
-  # {:noreply,
-  #  assign(socket, :payment_status, "STK push sent successfully! Please wait for confirmation.")
-  # }
-  {:noreply,
-  push_redirect(socket,
-    to: ~p"/verify_payment/#{username}/#{mac}?package_id=#{package_id}"
-  )}
-
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to send STK push: #{reason}")}
+    end
+  else
+    _ -> {:noreply, put_flash(socket, :error, "Payment initiation failed. Please try again.")}
+  end
 end
+
+
+#   @impl true
+#   def handle_event(
+#       "process_payment",
+#       %{"phone_number" => phone, "package_id" => package_id, "price" => price, "mac" => mac, "username" => username},
+#       socket
+#     ) do
+#   user = Repo.get_by(User, username: username)
+#   # amount = Decimal.new(price)
+#    amount =
+#       case Decimal.new(price) do
+#         %Decimal{} = decimal -> Decimal.to_integer(decimal)
+#         _ -> 0 # Handle invalid price inputs gracefully
+#       end
+#   transaction_description = "Payment for package #{package_id}"
+
+#   Repo.transaction(fn ->
+#     # Step 1: Save payment in the payments table
+#     {:ok, payment} =
+#       %Payment{}
+#       |> Payment.changeset(%{
+#         user_id: user.id,
+#         package_id: String.to_integer(package_id),
+#         amount: amount,
+#         phone_number: phone,
+#         status: "pending",
+#         username: mac,
+#         account_reference: mac,
+#         transaction_description: transaction_description
+
+#       })
+#       |> Repo.insert()
+
+#     # Step 2: Send STK push
+
+
+#     stk_response =
+#       case MpesaApi.send_stk_push(
+#              user.id,
+#              payment.id,
+#              amount,
+#              phone,
+#              mac,
+#              transaction_description
+#            ) do
+#         {:ok, response} ->
+#           response
+
+#         {:error, reason} ->
+#           raise "Failed to send STK push: #{reason}"
+#       end
+
+#     # Step 3: Save STK push response in mpesa_transactions table
+#     # Repo.insert!(%MpesaTransaction{
+#     #       user_id:  user.id,
+#     #       payment_id: payment.id,
+#     #       checkout_request_id: stk_response["CheckoutRequestID"],
+#     #       merchant_request_id: stk_response["MerchantRequestID"],
+#     #       status: "initiated",
+#     #       raw_response: stk_response
+#     #     })
+#       end)
+
+#   # {:noreply,
+#   #  assign(socket, :payment_status, "STK push sent successfully! Please wait for confirmation.")
+#   # }
+#   {:noreply,
+#   push_redirect(socket,
+#     to: ~p"/verify_payment/#{username}/#{mac}?payment_id=#{payment.id}"
+#   )}
+
+# end
+
+# */
 
   def render(assigns) do
     ~H"""
