@@ -257,8 +257,9 @@ defmodule QserveIspApi.MpesaApi do
     {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
       case Jason.decode(body) do
         {:ok, %{"access_token" => token, "expires_in" => expires_in}} ->
+          expiry_time = System.system_time(:second) + String.to_integer("#{expires_in}")
+
           # Store token and expiry time
-          expiry_time = System.system_time(:second) + expires_in
           GenServer.cast(__MODULE__, {:set_token, token, expiry_time})
           {:ok, token}
 
@@ -270,6 +271,35 @@ defmodule QserveIspApi.MpesaApi do
       {:error, reason}
     end
     end
+
+  # defp fetch_and_store_token(%{
+  #       consumer_key: consumer_key,
+  #       consumer_secret: consumer_secret
+  #     }) do
+  #   credentials = Base.encode64("#{consumer_key}:#{consumer_secret}")
+
+  #   headers = [
+  #   {"Authorization", "Basic #{credentials}"},
+  #   {"Content-Type", "application/json"}
+  #   ]
+
+  #   case HTTPoison.get(@mpesa_config[:token_url], headers) do
+  #   {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+  #     case Jason.decode(body) do
+  #       {:ok, %{"access_token" => token, "expires_in" => expires_in}} ->
+  #         # Store token and expiry time
+  #         expiry_time = System.system_time(:second) + expires_in
+  #         GenServer.cast(__MODULE__, {:set_token, token, expiry_time})
+  #         {:ok, token}
+
+  #       {:error, _reason} ->
+  #         {:error, :invalid_response}
+  #     end
+
+  #   {:error, reason} ->
+  #     {:error, reason}
+  #   end
+  #   end
 
   ## GenServer Callbacks
 
