@@ -59,7 +59,8 @@ defmodule QserveIspApiWeb.Router do
 
 
     # post "/packages/:package_id/associate_nas", PackageController, :associate_package_to_nas
-    resources "/payments", PaymentController, only: [:index, :show, :create, :update]
+    # resources "/payments", PaymentController, only: [:index, :show, :create, :update]
+    get "/user/payments", PaymentController, :list_user_payments
     post "/payments/callback", PaymentController, :callback
     get "/user/transactions", MpesaController, :list_user_transactions
 

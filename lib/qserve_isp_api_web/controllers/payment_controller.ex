@@ -46,4 +46,19 @@ defmodule QserveIspApiWeb.PaymentController do
     Payments.handle_payment_callback(params)
     json(conn, %{message: "Payment processed"})
   end
+
+  def list_user_payments(conn, _params) do
+    case AuthUtils.extract_user_id(conn) do
+      {:ok, user_id} ->
+        payments = Payments.list_user_payments(user_id)
+
+        json(conn, %{status: "success", payments: payments})
+
+      {:error, _reason} ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{status: "error", message: "Invalid or missing authentication token"})
+    end
+  end
+
 end

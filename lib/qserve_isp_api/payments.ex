@@ -161,6 +161,8 @@ defmodule QserveIspApi.Payments do
     """
     def get_payment!(id), do: Repo.get!(Payment, id)
 
+    def list_user_payments!(user_id), do: Repo.get!(Payment,user_id)
+
     @doc """
     Create a new payment.
     """
@@ -178,4 +180,13 @@ defmodule QserveIspApi.Payments do
       |> Payment.changeset(attrs)
       |> Repo.update()
     end
+
+    # def list_user_payments(user_id) do
+    #   Repo.all(
+    #     from p in Payment,
+    #     where: p.user_id == ^user_id,
+    #     order_by: [desc: p.inserted_at]
+    #   )
+    # end
+
   end
