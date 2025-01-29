@@ -22,20 +22,21 @@ defmodule QserveIspApi.MpesaTransactions.MpesaTransaction do
   @doc false
   def changeset(mpesa_transaction, attrs) do
     mpesa_transaction
-    |> cast(attrs, [
-      :payment_id,
-      :checkout_request_id,
-      :merchant_request_id,
-      :amount,
-      :mpesa_receipt_number,
-      :transaction_date,
-      :phone_number,
-      :result_code,
-      :result_desc,
-      :status,
-      :raw_response,
-      :user_id
-    ])
+    # |> cast(attrs, [
+    #   :payment_id,
+    #   :checkout_request_id,
+    #   :merchant_request_id,
+    #   :amount,
+    #   :mpesa_receipt_number,
+    #   :transaction_date,
+    #   :phone_number,
+    #   :result_code,
+    #   :result_desc,
+    #   :status,
+    #   :raw_response,
+    #   :user_id
+    # ])
+    |> cast(attrs, [:checkout_request_id, :phone_number, :amount, :package_id, :status, :user_id])
     |> validate_required([:checkout_request_id, :phone_number, :amount, :package_id, :status, :user_id])
     |> unique_constraint(:checkout_request_id, name: "mpesa_transactions_checkout_request_id_index")  # ✅ Added constraint handling
 
