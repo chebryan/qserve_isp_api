@@ -2,6 +2,12 @@ defmodule QserveIspApi.MpesaTransactions.MpesaTransaction do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {Jason.Encoder, only: [
+    :id, :user_id, :payment_id, :checkout_request_id, :merchant_request_id,
+    :amount, :mpesa_receipt_number, :transaction_date, :phone_number,
+    :result_code, :result_desc, :status, :raw_response, :inserted_at, :updated_at
+  ]}
+
   schema "mpesa_transactions" do
     field :user_id, :integer
     field :payment_id, :integer
