@@ -33,6 +33,12 @@ defmodule QserveIspApiWeb.Router do
     # live "/dashboard/:username/:nas_ipaddress/:mac", DashboardLive, :index
     # live "/expiry/:username/:nas_ipaddress/:mac", ExpiryLive, :index
     live "/expired", ExpiryLive, :index
+
+
+    get "/active_users", RadacctController, :active_users
+    get "/user_data_usage/:username", RadacctController, :user_data_usage
+    get "/last_session/:username", RadacctController, :last_session
+
   end
 
   # Other scopes may use custom stacks.
